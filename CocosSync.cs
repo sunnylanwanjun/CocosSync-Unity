@@ -19,6 +19,7 @@ namespace CocosSync
         public Vector3 position;
         public Vector3 scale;
         public Vector3 eulerAngles;
+        public bool needMerge = false;
 
         public List<SyncNodeData> children = new List<SyncNodeData>();
         public List<string> components = new List<string>();
@@ -139,7 +140,7 @@ namespace CocosSync
                 }
                 else
                 {
-                    pdata = ExportNode(curr);
+                    pdata = ExportNode(curr, true);
                 }
 
                 if (rootData != null)
@@ -182,20 +183,23 @@ namespace CocosSync
                     SyncComponentData compData = null;
                     if (comp is Terrain)
                     {
-                        compData = ExportTerrain(comp as Terrain);
+                        compData = new SyncTerrainData();
                     }
                     else if (comp is MeshRenderer)
                     {
-                        compData = ExportMeshRenderer(comp as MeshRenderer);
+                        compData = new SyncMeshRendererData();
                     }
                     else if (comp is MergeStatics)
                     {
-                        compData = new SyncComponentData();
-                        compData.Sync(comp);
+                        data.needMerge = true;
+
+                        compData = new SyncMergeStaticsData();
                     }
 
                     if (compData != null)
                     {
+                        compData.Sync(comp);
+
                         compData.uuid = comp.GetInstanceID().ToString();
                         sceneData.componentCount++;
 
@@ -217,7 +221,12 @@ namespace CocosSync
                 var childCount = Math.Min(t.childCount, maxChildCount);
                 for (var i = 0; i < childCount; i++)
                 {
-                    var childData = ExportNode(t.GetChild(i), syncComponent, syncChildren);
+                    var c = t.GetChild(i);
+                    if (!c.gameObject.activeInHierarchy)
+                    {
+                        continue;
+                    }
+                    var childData = ExportNode(c, syncComponent, syncChildren);
                     data.children.Add(childData);
                 }
             }
@@ -225,96 +234,6 @@ namespace CocosSync
             return data;
         }
 
-        SyncMeshRendererData ExportMeshRenderer(MeshRenderer comp)
-        {
-            SyncMeshRendererData data = new SyncMeshRendererData();
-            data.name = "cc.MeshRenderer";
-
-            foreach (var m in comp.sharedMaterials)
-            {
-                var uuid = SyncAssetData.GetAssetData<SyncMaterialData>(m);
-                data.materilas.Add(uuid);
-            }
-
-            var filter = comp.GetComponent<MeshFilter>();
-            if (filter)
-            {
-                data.mesh = SyncAssetData.GetAssetData<SyncMeshData>(filter.sharedMesh);
-            }
-
-            return data;
-        }
-
-        SyncTerrainData ExportTerrain(Terrain terrainObject)
-        {
-            SyncTerrainData data = new SyncTerrainData();
-            data.name = "cc.Terrain";
-
-            TerrainData terrain = terrainObject.terrainData;
-
-            var terrainLayers = terrain.terrainLayers;
-            var alphaMaps = terrain.GetAlphamaps(0, 0, terrain.alphamapWidth, terrain.alphamapHeight);
-
-            for (var i = 0; i < terrainLayers.Length; i++)
-            {
-                SyncTerrainLayer layer = new SyncTerrainLayer();
-                layer.name = terrainLayers[i].name;
-                data.terrainLayers.Add(layer);
-            }
-
-            // weight datas
-            int weightmapWidth = terrain.alphamapWidth;
-            int weightmapHeight = terrain.alphamapHeight;
-
-            float[] allWeightDatas = new float[weightmapWidth * weightmapHeight * terrainLayers.Length];
-            for (var i = 0; i < weightmapWidth; i++)
-            {
-                for (var j = 0; j < weightmapHeight; j++)
-                {
-                    for (var k = 0; k < terrainLayers.Length; k++)
-                    {
-                        var value = alphaMaps[j, i, k];
-                        if (Single.IsNaN(value))
-                        {
-                            value = 0;
-                        }
-
-                        int index = (i + j * weightmapWidth) * terrainLayers.Length + k;
-                        allWeightDatas[index] = value;
-                    }
-                }
-            }
-
-
-            // height datas
-            int heightmapWidth = terrain.heightmapResolution;
-            int heightmapHeight = terrain.heightmapResolution;
-
-            var tData = terrain.GetHeights(0, 0, heightmapWidth, heightmapHeight);
-            var height = terrain.size.y;
-
-            float[] allHeightDatas = new float[heightmapWidth * heightmapHeight];
-            for (var i = 0; i < heightmapWidth; i++)
-            {
-                for (var j = 0; j < heightmapHeight; j++)
-                {
-                    allHeightDatas[i + j * heightmapWidth] = tData[j, i] * height;
-                }
-            }
-
-            data.weightDatas = allWeightDatas;
-            data.heightmapWidth = heightmapWidth;
-            data.heightmapHeight = heightmapHeight;
-
-            data.heightDatas = allHeightDatas;
-            data.weightmapWidth = weightmapWidth;
-            data.weightmapHeight = weightmapHeight;
-
-            data.terrainWidth = terrain.size.x;
-            data.terrainHeight = terrain.size.y;
-
-            return data;
-        }
 
         void SyncScene()
         {

@@ -12,7 +12,7 @@ namespace CocosSync
         public String uuid;
         public String name;
 
-        public void Sync(Component c)
+        public virtual void Sync(Component c)
         {
             this.name = c.name;
         }

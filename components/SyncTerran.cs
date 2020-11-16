@@ -31,6 +31,76 @@ namespace CocosSync
         public float terrainWidth;
         public float terrainHeight;
 
+        public override void Sync(Component c)
+        {
+            Terrain terrainObject = c as Terrain;
+
+            this.name = "cc.Terrain";
+
+            TerrainData terrain = terrainObject.terrainData;
+
+            var terrainLayers = terrain.terrainLayers;
+            var alphaMaps = terrain.GetAlphamaps(0, 0, terrain.alphamapWidth, terrain.alphamapHeight);
+
+            for (var i = 0; i < terrainLayers.Length; i++)
+            {
+                SyncTerrainLayer layer = new SyncTerrainLayer();
+                layer.name = terrainLayers[i].name;
+                this.terrainLayers.Add(layer);
+            }
+
+            // weight datas
+            int weightmapWidth = terrain.alphamapWidth;
+            int weightmapHeight = terrain.alphamapHeight;
+
+            float[] allWeightDatas = new float[weightmapWidth * weightmapHeight * terrainLayers.Length];
+            for (var i = 0; i < weightmapWidth; i++)
+            {
+                for (var j = 0; j < weightmapHeight; j++)
+                {
+                    for (var k = 0; k < terrainLayers.Length; k++)
+                    {
+                        var value = alphaMaps[j, i, k];
+                        if (Single.IsNaN(value))
+                        {
+                            value = 0;
+                        }
+
+                        int index = (i + j * weightmapWidth) * terrainLayers.Length + k;
+                        allWeightDatas[index] = value;
+                    }
+                }
+            }
+
+
+            // height datas
+            int heightmapWidth = terrain.heightmapResolution;
+            int heightmapHeight = terrain.heightmapResolution;
+
+            var tData = terrain.GetHeights(0, 0, heightmapWidth, heightmapHeight);
+            var height = terrain.size.y;
+
+            float[] allHeightDatas = new float[heightmapWidth * heightmapHeight];
+            for (var i = 0; i < heightmapWidth; i++)
+            {
+                for (var j = 0; j < heightmapHeight; j++)
+                {
+                    allHeightDatas[i + j * heightmapWidth] = tData[j, i] * height;
+                }
+            }
+
+            this.weightDatas = allWeightDatas;
+            this.heightmapWidth = heightmapWidth;
+            this.heightmapHeight = heightmapHeight;
+
+            this.heightDatas = allHeightDatas;
+            this.weightmapWidth = weightmapWidth;
+            this.weightmapHeight = weightmapHeight;
+
+            this.terrainWidth = terrain.size.x;
+            this.terrainHeight = terrain.size.y;
+        }
+
 
         public override string GetData()
         {
