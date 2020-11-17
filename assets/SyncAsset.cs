@@ -16,6 +16,11 @@ namespace CocosSync
 
         public static string GetAssetData<IDataType>(UnityEngine.Object obj) where IDataType : SyncAssetData, new()
         {
+            if (obj == null)
+            {
+                return "";
+            }
+
             string uuid;
             long file;
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out uuid, out file))
