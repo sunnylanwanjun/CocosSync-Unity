@@ -8,17 +8,11 @@ namespace CocosSync
 {
 
     [Serializable]
-    class SyncMaterialData : SyncAssetData
+    class SyncShaderData : SyncAssetData
     {
-        public String shaderUuid = "";
-
         public override void Sync(UnityEngine.Object obj)
         {
-            this.name = "cc.Material";
-
-            Material m = obj as Material;
-
-            this.shaderUuid = SyncAssetData.GetAssetData<SyncShaderData>(m.shader);
+            this.name = "cc.Shader";
         }
 
         public override string GetData()
