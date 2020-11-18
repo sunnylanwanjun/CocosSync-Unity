@@ -15,10 +15,17 @@ namespace CocosSync
     }
 
     [Serializable]
+    class SyncPassState
+    {
+        public int cullMode;
+    }
+
+    [Serializable]
     class SyncMaterialData : SyncAssetData
     {
         public String shaderUuid = "";
         public List<SyncShaderProperty> properties = new List<SyncShaderProperty>();
+        public SyncPassState passState = new SyncPassState();
 
         public override void Sync(UnityEngine.Object obj)
         {
@@ -61,6 +68,7 @@ namespace CocosSync
                 }
             }
 
+            this.passState.cullMode = m.GetInt("_Cull");
         }
 
         public override string GetData()
