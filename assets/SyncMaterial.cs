@@ -18,7 +18,7 @@ namespace CocosSync
     class SyncMaterialData : SyncAssetData
     {
         public String shaderUuid = "";
-        public List<String> properties = new List<string>();
+        public List<SyncShaderProperty> properties = new List<SyncShaderProperty>();
 
         public override void Sync(UnityEngine.Object obj)
         {
@@ -36,6 +36,8 @@ namespace CocosSync
                 var prop = new SyncShaderProperty();
                 prop.type = (int)type;
                 prop.name = name;
+
+                this.properties.Add(prop);
 
                 if (type == UnityEngine.Rendering.ShaderPropertyType.Color)
                 {
