@@ -57,7 +57,15 @@ namespace CocosSync
             asset.Sync(obj);
 
             assetPack.Add(obj.name, asset);
-            CocosSyncTool.sceneData.assets.Add(asset.GetData());
+
+            if (asset is SyncTextureData)
+            {
+                CocosSyncTool.sceneData.assets.Insert(0, asset.GetData());
+            }
+            else
+            {
+                CocosSyncTool.sceneData.assets.Add(asset.GetData());
+            }
 
             return asset.uuid;
         }

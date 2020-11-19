@@ -35,10 +35,14 @@ namespace CocosSync
         public String assetBasePath = "";
         public Dictionary<string, Dictionary<string, SyncAssetData>> assetsMap = new Dictionary<string, Dictionary<string, SyncAssetData>>();
         public List<string> assets = new List<string>();
+
+        public bool forceSyncAsset = false;
     }
 
     class CocosSyncTool : EditorWindow
     {
+        public bool ForceSyncAsset = false;
+
         static private SocketManager Manager;
         static string address = "http://127.0.0.1:8877/socket.io/";
 
@@ -79,7 +83,7 @@ namespace CocosSync
         {
             CheckSocket();
 
-            if (Manager.State == SocketManager.States.Opening)
+            if (Manager.State == SocketManager.States.Opening || Manager.State == SocketManager.States.Reconnecting)
             {
                 GUILayout.Label("Connecting.");
                 return;
@@ -94,6 +98,8 @@ namespace CocosSync
             {
                 SyncScene();
             }
+
+            this.ForceSyncAsset = GUILayout.Toggle(this.ForceSyncAsset, "Force Sync Asset");
         }
 
 
@@ -155,6 +161,7 @@ namespace CocosSync
             sceneData.children.Add(rootData);
 
             sceneData.assetBasePath = Application.dataPath;
+            sceneData.forceSyncAsset = this.ForceSyncAsset;
 
             object jsonData = JsonUtility.ToJson(sceneData);
             Manager.Socket.Emit("sync-datas", jsonData);
@@ -180,6 +187,14 @@ namespace CocosSync
             {
                 foreach (var comp in t.GetComponents<Component>())
                 {
+                    if (comp as MonoBehaviour)
+                    {
+                        if (!(comp as MonoBehaviour).enabled)
+                        {
+                            continue;
+                        }
+                    }
+
                     SyncComponentData compData = null;
                     if (comp is Terrain)
                     {
@@ -210,7 +225,7 @@ namespace CocosSync
 
             if (syncChildren)
             {
-                var maxChildCount = 10000;
+                var maxChildCount = 100000;
 
                 var group = t.GetComponent<LODGroup>();
                 if (group)

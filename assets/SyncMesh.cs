@@ -8,7 +8,7 @@ namespace CocosSync
 {
 
     [Serializable]
-class SyncMeshData : SyncAssetData
+    class SyncMeshData : SyncAssetData
     {
         public string meshName;
 
@@ -36,7 +36,7 @@ class SyncMeshData : SyncAssetData
             foreach (var v in m.uv)
             {
                 this.uv.Add(v.x);
-                this.uv.Add(v.y);
+                this.uv.Add(1 - v.y);
             }
             foreach (var v in m.normals)
             {

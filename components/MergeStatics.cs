@@ -29,5 +29,14 @@ namespace CocosSync
     public class MergeStatics : MonoBehaviour
     {
         public float mergeSize = 10;
+
+        private void OnEnable()
+        {
+
+        }
+        private void OnDisable()
+        {
+
+        }
     }
 }
