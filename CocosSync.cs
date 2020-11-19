@@ -42,6 +42,7 @@ namespace CocosSync
     class CocosSyncTool : EditorWindow
     {
         public bool ForceSyncAsset = false;
+        public int MaxChildCount = 100000;
 
         static private SocketManager Manager;
         static string address = "http://127.0.0.1:8877/socket.io/";
@@ -94,12 +95,18 @@ namespace CocosSync
             {
                 SyncSelect();
             }
-            if (GUILayout.Button("SyncScene"))
-            {
-                SyncScene();
-            }
+            // if (GUILayout.Button("SyncScene"))
+            // {
+            //     SyncScene();
+            // }
 
             this.ForceSyncAsset = GUILayout.Toggle(this.ForceSyncAsset, "Force Sync Asset");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("MaxChildCount");
+            this.MaxChildCount = EditorGUILayout.IntField(this.MaxChildCount);
+            EditorGUILayout.EndHorizontal();
+
         }
 
 
@@ -225,7 +232,7 @@ namespace CocosSync
 
             if (syncChildren)
             {
-                var maxChildCount = 100000;
+                var maxChildCount = this.MaxChildCount;
 
                 var group = t.GetComponent<LODGroup>();
                 if (group)
