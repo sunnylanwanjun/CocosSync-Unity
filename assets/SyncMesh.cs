@@ -13,6 +13,7 @@ namespace CocosSync
         public List<float> vertices = new List<float>();
         public List<float> uv = new List<float>();
         public List<float> normals = new List<float>();
+        public List<float> colors = new List<float>();
         public List<float> boneWeights = new List<float>();
         public List<int> indices = new List<int>();
     }
@@ -56,6 +57,13 @@ namespace CocosSync
                     smd.normals.Add(v.x);
                     smd.normals.Add(v.y);
                     smd.normals.Add(v.z);
+                }
+                foreach (var v in sm.colors)
+                {
+                    smd.colors.Add(v.r);
+                    smd.colors.Add(v.g);
+                    smd.colors.Add(v.b);
+                    smd.colors.Add(v.a);
                 }
                 foreach (var v in sm.boneWeights)
                 {
