@@ -211,11 +211,11 @@ namespace CocosSync
                     {
                         compData = new SyncMeshRendererData();
                     }
-                    else if (comp is MergeStatics)
+                    else if (comp is InstanceObject)
                     {
                         data.needMerge = true;
 
-                        compData = new SyncMergeStaticsData();
+                        compData = new SyncInstanceObjectData();
                     }
 
                     if (compData != null)

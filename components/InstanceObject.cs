@@ -8,15 +8,15 @@ using UnityEditor;
 namespace CocosSync
 {
     [Serializable]
-    class SyncMergeStaticsData : SyncComponentData
+    class SyncInstanceObjectData : SyncComponentData
     {
         public float mergeSize = 10;
 
         public override void Sync(Component c)
         {
-            MergeStatics comp = c as MergeStatics;
+            InstanceObject comp = c as InstanceObject;
 
-            this.name = "MergeStatics";
+            this.name = "InstanceObject";
             this.mergeSize = comp.mergeSize;
         }
 
@@ -26,7 +26,7 @@ namespace CocosSync
         }
     }
 
-    public class MergeStatics : MonoBehaviour
+    public class InstanceObject : MonoBehaviour
     {
         public float mergeSize = 10;
 
