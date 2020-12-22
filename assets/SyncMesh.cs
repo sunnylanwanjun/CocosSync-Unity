@@ -29,50 +29,86 @@ namespace CocosSync
 
         public override void Sync(UnityEngine.Object obj)
         {
+            Sync(obj, 0, 10000);
+        }
+
+        public void Sync(UnityEngine.Object obj, int start, int count)
+        {
             this.name = "cc.Mesh";
 
             Mesh m = obj as Mesh;
             this.meshName = m.name;
 
-            for (var mi = 0; mi < m.subMeshCount; mi++)
+            var vertices = new List<Vector3>();
+            m.GetVertices(vertices);
+
+            var normals = new List<Vector3>();
+            m.GetNormals(normals);
+
+            var colors = new List<Color>();
+            m.GetColors(colors);
+
+            var weights = new List<BoneWeight>();
+            m.GetBoneWeights(weights);
+
+            var uvs = new List<Vector2>();
+            m.GetUVs(0, uvs);
+
+            int end = Math.Min(m.subMeshCount + count, m.subMeshCount);
+
+            for (var mi = start; mi < end; mi++)
             {
-                var sm = m.GetSubmesh(mi);
+                var sm = m.GetSubMesh(mi);
 
                 var smd = new SyncSubMeshData();
                 this.subMeshes.Add(smd);
 
-                foreach (var v in sm.vertices)
+                for (int vi = 0; vi < sm.vertexCount; vi++)
                 {
-                    smd.vertices.Add(v.x);
-                    smd.vertices.Add(v.y);
-                    smd.vertices.Add(v.z);
+                    if (vertices.Count != 0)
+                    {
+                        var v = vertices[sm.firstVertex + vi];
+                        smd.vertices.Add(v.x);
+                        smd.vertices.Add(v.y);
+                        smd.vertices.Add(v.z);
+                    }
+
+                    if (normals.Count != 0)
+                    {
+                        var n = normals[sm.firstVertex + vi];
+                        smd.normals.Add(n.x);
+                        smd.normals.Add(n.y);
+                        smd.normals.Add(n.z);
+                    }
+
+                    if (colors.Count != 0)
+                    {
+                        var c = colors[sm.firstVertex + vi];
+                        smd.colors.Add(c.r);
+                        smd.colors.Add(c.g);
+                        smd.colors.Add(c.b);
+                        smd.colors.Add(c.a);
+                    }
+
+                    if (weights.Count != 0)
+                    {
+                        var weight = weights[sm.firstVertex + vi];
+                        smd.boneWeights.Add(weight.weight0);
+                        smd.boneWeights.Add(weight.weight1);
+                        smd.boneWeights.Add(weight.weight2);
+                        smd.boneWeights.Add(weight.weight3);
+                    }
+
+                    if (uvs.Count != 0)
+                    {
+                        var uv = uvs[sm.firstVertex + vi];
+                        smd.uv.Add(uv.x);
+                        smd.uv.Add(1 - uv.y);
+                    }
                 }
-                foreach (var v in sm.uv)
-                {
-                    smd.uv.Add(v.x);
-                    smd.uv.Add(1 - v.y);
-                }
-                foreach (var v in sm.normals)
-                {
-                    smd.normals.Add(v.x);
-                    smd.normals.Add(v.y);
-                    smd.normals.Add(v.z);
-                }
-                foreach (var v in sm.colors)
-                {
-                    smd.colors.Add(v.r);
-                    smd.colors.Add(v.g);
-                    smd.colors.Add(v.b);
-                    smd.colors.Add(v.a);
-                }
-                foreach (var v in sm.boneWeights)
-                {
-                    smd.boneWeights.Add(v.weight0);
-                    smd.boneWeights.Add(v.weight1);
-                    smd.boneWeights.Add(v.weight2);
-                    smd.boneWeights.Add(v.weight3);
-                }
-                foreach (var v in sm.triangles)
+
+                var triangles = m.GetTriangles(mi);
+                foreach (var v in triangles)
                 {
                     smd.indices.Add(v);
                 }

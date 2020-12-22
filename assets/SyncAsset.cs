@@ -14,6 +14,8 @@ namespace CocosSync
         public String uuid;
         public String path;
 
+        public bool shouldCheckSrc = true;
+
         public static string GetAssetData<IDataType>(UnityEngine.Object obj) where IDataType : SyncAssetData, new()
         {
             if (obj == null)

@@ -32,7 +32,8 @@ namespace CocosSync
         public int componentCount = 0;
         public List<SyncNodeData> children = new List<SyncNodeData>();
 
-        public String assetBasePath = "";
+        public string assetBasePath = "";
+        public string exportBasePath = "Exported";
         public Dictionary<string, Dictionary<string, SyncAssetData>> assetsMap = new Dictionary<string, Dictionary<string, SyncAssetData>>();
         public List<string> assets = new List<string>();
 
@@ -41,6 +42,13 @@ namespace CocosSync
 
     class CocosSyncTool : EditorWindow
     {
+        public static CocosSyncTool Instance
+        {
+            get {
+                return EditorWindow.GetWindow<CocosSyncTool>();
+            }
+        }
+
         public bool ForceSyncAsset = false;
         public int MaxChildCount = 100000;
 
@@ -48,6 +56,8 @@ namespace CocosSync
         static string address = "http://127.0.0.1:8877/socket.io/";
 
         public static SyncSceneData sceneData = null;
+
+        public string exportBasePath = "Exported";
 
 
         [MenuItem("Cocos/Sync Tool")]
@@ -99,8 +109,12 @@ namespace CocosSync
             // {
             //     SyncScene();
             // }
-
             this.ForceSyncAsset = GUILayout.Toggle(this.ForceSyncAsset, "Force Sync Asset");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("ExportBasePath");
+            this.exportBasePath = EditorGUILayout.TextField(this.exportBasePath);
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label("MaxChildCount");
@@ -168,6 +182,7 @@ namespace CocosSync
             sceneData.children.Add(rootData);
 
             sceneData.assetBasePath = Application.dataPath;
+            sceneData.exportBasePath = this.exportBasePath;
             sceneData.forceSyncAsset = this.ForceSyncAsset;
 
             object jsonData = JsonUtility.ToJson(sceneData);
