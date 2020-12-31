@@ -12,6 +12,7 @@ namespace CocosSync
     {
         public List<float> vertices = new List<float>();
         public List<float> uv = new List<float>();
+        public List<float> uv1 = new List<float>();
         public List<float> normals = new List<float>();
         public List<float> colors = new List<float>();
         public List<float> boneWeights = new List<float>();
@@ -53,6 +54,9 @@ namespace CocosSync
 
             var uvs = new List<Vector2>();
             m.GetUVs(0, uvs);
+
+            var uvs1 = new List<Vector2>();
+            m.GetUVs(1, uvs1);
 
             int end = Math.Min(m.subMeshCount + count, m.subMeshCount);
 
@@ -104,6 +108,13 @@ namespace CocosSync
                         var uv = uvs[sm.firstVertex + vi];
                         smd.uv.Add(uv.x);
                         smd.uv.Add(1 - uv.y);
+                    }
+
+                    if (uvs1.Count != 0)
+                    {
+                        var uv1 = uvs1[sm.firstVertex + vi];
+                        smd.uv1.Add(uv1.x);
+                        smd.uv1.Add(uv1.y);
                     }
                 }
 

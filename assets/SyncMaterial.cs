@@ -68,7 +68,9 @@ namespace CocosSync
                 }
             }
 
-            this.passState.cullMode = m.GetInt("_Cull");
+            if (m.HasProperty("_Cull")) {
+                this.passState.cullMode = m.GetInt("_Cull");
+            }
         }
 
         public override string GetData()

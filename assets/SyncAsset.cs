@@ -23,6 +23,8 @@ namespace CocosSync
                 return "";
             }
 
+            var path = AssetDatabase.GetAssetPath(obj);
+
             string uuid;
             long file;
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out uuid, out file))
@@ -53,7 +55,7 @@ namespace CocosSync
 
             asset.uuid = uuid + "/" + obj.name;
 
-            asset.path = AssetDatabase.GetAssetPath(obj);
+            asset.path = path;
             asset.path = asset.path.Replace("Assets/", "");
 
             asset.Sync(obj);
