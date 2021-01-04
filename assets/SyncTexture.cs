@@ -69,7 +69,7 @@ namespace CocosSync
                         texture.width,
                         texture.height,
                         0,
-                        RenderTextureFormat.RGB111110Float,
+                        RenderTextureFormat.DefaultHDR,
                         RenderTextureReadWrite.Linear
                     );
 
@@ -121,10 +121,11 @@ namespace CocosSync
                             }
                             else
                             {
-                                tmpColor.x = colors[ci].r;
-                                tmpColor.y = colors[ci].g;
-                                tmpColor.z = colors[ci].b;
-                                tmpColor.w = colors[ci].a;
+                                float scale = (float)1;
+                                tmpColor.x = colors[ci].r * scale;
+                                tmpColor.y = colors[ci].g * scale;
+                                tmpColor.z = colors[ci].b * scale;
+                                tmpColor.w = colors[ci].a * scale;
 
                                 HDR2RGBE(tmpColor, out tmpColor);
                             }
