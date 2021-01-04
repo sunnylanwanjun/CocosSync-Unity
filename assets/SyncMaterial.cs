@@ -26,14 +26,24 @@ namespace CocosSync
         public String shaderUuid = "";
         public List<SyncShaderProperty> properties = new List<SyncShaderProperty>();
         public SyncPassState passState = new SyncPassState();
+        
+        public bool hasLightMap = false; 
 
-        public override void Sync(UnityEngine.Object obj)
+        public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             this.name = "cc.Material";
 
             Material m = obj as Material;
 
-            this.shaderUuid = SyncAssetData.GetAssetData<SyncShaderData>(m.shader);
+            var meshRenderer = param1 as SyncMeshRendererData;
+            if (meshRenderer != null) {
+                this.hasLightMap = meshRenderer.lightmapSetting != null;
+            }
+
+            var shader = SyncAssetData.GetAssetData<SyncShaderData>(m.shader);
+            if (shader != null) {
+                this.shaderUuid = shader.uuid;
+            }
 
             for (var pi = 0; pi < m.shader.GetPropertyCount(); pi++)
             {
@@ -59,7 +69,10 @@ namespace CocosSync
                     var t = m.GetTexture(name);
                     if (t)
                     {
-                        prop.value = SyncAssetData.GetAssetData<SyncTextureData>(t);
+                        var tex = SyncAssetData.GetAssetData<SyncTextureData>(t);
+                        if (tex != null) {
+                            prop.value = tex.uuid;
+                        }
                     }
                 }
                 else if (type == UnityEngine.Rendering.ShaderPropertyType.Vector)

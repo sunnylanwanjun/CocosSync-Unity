@@ -32,21 +32,28 @@ namespace CocosSync
 
             this.name = "cc.MeshRenderer";
 
-            foreach (var m in comp.sharedMaterials)
-            {
-                var uuid = SyncAssetData.GetAssetData<SyncMaterialData>(m);
-                this.materilas.Add(uuid);
-            }
-
             if (comp.lightmapIndex >= 0 && LightmapSettings.lightmaps.Length > comp.lightmapIndex)
             {
                 var lightmapData = LightmapSettings.lightmaps.GetValue(comp.lightmapIndex) as LightmapData;
 
-                var lightmapSetting = new SyncLightMapSetting();
-                lightmapSetting.lightmapColor = SyncAssetData.GetAssetData<SyncTextureData>(lightmapData.lightmapColor);
-                lightmapSetting.uv = new Vector4(comp.lightmapScaleOffset.z, comp.lightmapScaleOffset.w, comp.lightmapScaleOffset.x, comp.lightmapScaleOffset.y);
+                var lightmapTex = SyncAssetData.GetAssetData<SyncTextureData>(lightmapData.lightmapColor);
+                if (lightmapTex != null)
+                {
+                    var lightmapSetting = new SyncLightMapSetting();
+                    lightmapSetting.lightmapColor = lightmapTex.uuid;
+                    lightmapSetting.uv = new Vector4(comp.lightmapScaleOffset.z, comp.lightmapScaleOffset.w, comp.lightmapScaleOffset.x, comp.lightmapScaleOffset.y);
 
-                this.lightmapSetting = lightmapSetting.GetData();
+                    this.lightmapSetting = lightmapSetting.GetData();
+                }
+            }
+
+            foreach (var m in comp.sharedMaterials)
+            {
+                var mtl = SyncAssetData.GetAssetData<SyncMaterialData>(m, this);
+                if (mtl != null)
+                {
+                    this.materilas.Add(mtl.uuid);
+                }
             }
 
             var filter = comp.GetComponent<MeshFilter>();
@@ -67,7 +74,11 @@ namespace CocosSync
                 }
                 else
                 {
-                    this.mesh = SyncAssetData.GetAssetData<SyncMeshData>(filter.sharedMesh);
+                    var meshData = SyncAssetData.GetAssetData<SyncMeshData>(filter.sharedMesh);
+                    if (meshData != null)
+                    {
+                        this.mesh = meshData.uuid;
+                    }
                 }
             }
         }

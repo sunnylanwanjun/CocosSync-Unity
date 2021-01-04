@@ -28,7 +28,7 @@ namespace CocosSync
         public Vector3 min;
         public Vector3 max;
 
-        public override void Sync(UnityEngine.Object obj)
+        public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             Sync(obj, 0, 10000);
         }

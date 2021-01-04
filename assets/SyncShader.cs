@@ -10,7 +10,7 @@ namespace CocosSync
     [Serializable]
     class SyncShaderData : SyncAssetData
     {
-        public override void Sync(UnityEngine.Object obj)
+        public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             this.name = "cc.Shader";
         }

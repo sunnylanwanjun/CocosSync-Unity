@@ -16,11 +16,11 @@ namespace CocosSync
 
         public bool shouldCheckSrc = true;
 
-        public static string GetAssetData<IDataType>(UnityEngine.Object obj) where IDataType : SyncAssetData, new()
+        public static IDataType GetAssetData<IDataType>(UnityEngine.Object obj, object param1 = null) where IDataType : SyncAssetData, new()
         {
             if (obj == null)
             {
-                return "";
+                return null;
             }
 
             var path = AssetDatabase.GetAssetPath(obj);
@@ -30,7 +30,7 @@ namespace CocosSync
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out uuid, out file))
             {
                 Debug.LogWarning("Can not find guid for asset.");
-                return "";
+                return null;
             }
 
             Dictionary<string, SyncAssetData> assetPack;
@@ -48,7 +48,7 @@ namespace CocosSync
 
             if (asset != null)
             {
-                return asset.uuid;
+                return asset as IDataType;
             }
 
             asset = new IDataType();
@@ -58,7 +58,7 @@ namespace CocosSync
             asset.path = path;
             asset.path = asset.path.Replace("Assets/", "");
 
-            asset.Sync(obj);
+            asset.Sync(obj, param1);
 
             assetPack.Add(obj.name, asset);
 
@@ -71,10 +71,10 @@ namespace CocosSync
                 CocosSyncTool.sceneData.assets.Add(asset.GetData());
             }
 
-            return asset.uuid;
+            return asset as IDataType;
         }
 
-        public virtual void Sync(UnityEngine.Object obj)
+        public virtual void Sync(UnityEngine.Object obj, object param1 = null)
         {
             this.name = "cc.Asset";
         }
