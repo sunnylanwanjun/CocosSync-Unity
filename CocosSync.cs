@@ -37,7 +37,7 @@ namespace CocosSync
         public Dictionary<string, SyncAssetData> assetsMap = new Dictionary<string, SyncAssetData>();
         public List<string> assets = new List<string>();
 
-        public bool forceSyncAsset = false;
+        public string forceSyncAsset = "";
     }
 
     class CocosSyncTool : EditorWindow
@@ -50,7 +50,7 @@ namespace CocosSync
             }
         }
 
-        public bool ForceSyncAsset = false;
+        public string ForceSyncAsset = "";
         public int MaxChildCount = 100000;
 
         static private SocketManager Manager;
@@ -131,7 +131,11 @@ namespace CocosSync
             // {
             //     SyncScene();
             // }
-            this.ForceSyncAsset = GUILayout.Toggle(this.ForceSyncAsset, "Force Sync Asset");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("ForceSyncAsset");
+            this.ForceSyncAsset = EditorGUILayout.TextField(this.ForceSyncAsset);
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label("ExportBasePath");
@@ -269,6 +273,10 @@ namespace CocosSync
                         data.needMerge = true;
 
                         compData = new SyncInstanceObjectData();
+                    }
+                    else if (comp is Light)
+                    {
+                        compData = new SyncLightData();
                     }
 
                     if (compData != null)

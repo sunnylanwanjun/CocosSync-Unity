@@ -50,11 +50,14 @@ namespace CocosSync
         }
 
         private Texture2D texture;
+        private bool flipY = false;
 
         public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             name = "cc.Texture";
             texture = obj as Texture2D;
+
+            flipY = param1 != null;
         }
 
         public override string GetData()
@@ -111,8 +114,18 @@ namespace CocosSync
                 colors32 = newTexture2D.GetPixels32(0);
             }
 
+            var start = texture.height - 1;
+            var end = -1;
+            var step = -1;
+            if (flipY)
+            {
+                start = 0;
+                end = texture.height;
+                step = 1;
+            }
+
             var tmpColor = new Vector4();
-            for (var ch = 01; ch < texture.height; ch++)
+            for (var ch = start; ch != end; ch += step)
             {
                 for (var cw = 0; cw < texture.width; cw++)
                 {
@@ -126,7 +139,7 @@ namespace CocosSync
                     }
                     else
                     {
-                        float scale = (float)1;
+                        float scale = 1;
                         tmpColor.x = colors[ci].r * scale;
                         tmpColor.y = colors[ci].g * scale;
                         tmpColor.z = colors[ci].b * scale;

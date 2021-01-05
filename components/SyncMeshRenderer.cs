@@ -36,7 +36,7 @@ namespace CocosSync
             {
                 var lightmapData = LightmapSettings.lightmaps.GetValue(comp.lightmapIndex) as LightmapData;
 
-                var lightmapTex = SyncAssetData.GetAssetData<SyncTextureData>(lightmapData.lightmapColor);
+                var lightmapTex = SyncAssetData.GetAssetData<SyncTextureData>(lightmapData.lightmapColor, true);
                 if (lightmapTex != null)
                 {
                     var lightmapSetting = new SyncLightMapSetting();
