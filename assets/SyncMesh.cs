@@ -20,13 +20,21 @@ namespace CocosSync
     }
 
     [Serializable]
+    class SyncMeshDataDetail
+    {
+        public List<SyncSubMeshData> subMeshes = new List<SyncSubMeshData>();
+    }
+
+    [Serializable]
     class SyncMeshData : SyncAssetData
     {
         public string meshName;
-
-        public List<SyncSubMeshData> subMeshes = new List<SyncSubMeshData>();
         public Vector3 min;
         public Vector3 max;
+
+        private Mesh mesh;
+        private int submeshStart;
+        private int submeshCount;
 
         public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
@@ -35,37 +43,54 @@ namespace CocosSync
 
         public void Sync(UnityEngine.Object obj, int start, int count)
         {
-            this.name = "cc.Mesh";
+            name = "cc.Mesh";
 
-            Mesh m = obj as Mesh;
-            this.meshName = m.name;
+            mesh = obj as Mesh;
+            meshName = mesh.name;
+            
+            min = mesh.bounds.min;
+            max = mesh.bounds.max;
+
+            submeshStart = start;
+            submeshCount = count;
+        }
+
+        public override string GetData()
+        {
+            return JsonUtility.ToJson(this);
+        }
+
+        public override string GetDetailData()
+        {
+            SyncMeshDataDetail data = new SyncMeshDataDetail();
+            List<SyncSubMeshData> subMeshes = data.subMeshes;
 
             var vertices = new List<Vector3>();
-            m.GetVertices(vertices);
+            mesh.GetVertices(vertices);
 
             var normals = new List<Vector3>();
-            m.GetNormals(normals);
+            mesh.GetNormals(normals);
 
             var colors = new List<Color>();
-            m.GetColors(colors);
+            mesh.GetColors(colors);
 
             var weights = new List<BoneWeight>();
-            m.GetBoneWeights(weights);
+            mesh.GetBoneWeights(weights);
 
             var uvs = new List<Vector2>();
-            m.GetUVs(0, uvs);
+            mesh.GetUVs(0, uvs);
 
             var uvs1 = new List<Vector2>();
-            m.GetUVs(1, uvs1);
+            mesh.GetUVs(1, uvs1);
 
-            int end = Math.Min(m.subMeshCount + count, m.subMeshCount);
+            int end = Math.Min(submeshStart + submeshCount, mesh.subMeshCount);
 
-            for (var mi = start; mi < end; mi++)
+            for (var mi = submeshStart; mi < end; mi++)
             {
-                var sm = m.GetSubMesh(mi);
+                var sm = mesh.GetSubMesh(mi);
 
                 var smd = new SyncSubMeshData();
-                this.subMeshes.Add(smd);
+                subMeshes.Add(smd);
 
                 for (int vi = 0; vi < sm.vertexCount; vi++)
                 {
@@ -118,20 +143,14 @@ namespace CocosSync
                     }
                 }
 
-                var triangles = m.GetTriangles(mi);
+                var triangles = mesh.GetTriangles(mi);
                 foreach (var v in triangles)
                 {
                     smd.indices.Add(v);
                 }
             }
 
-            this.min = m.bounds.min;
-            this.max = m.bounds.max;
-        }
-
-        public override string GetData()
-        {
-            return JsonUtility.ToJson(this);
+            return JsonUtility.ToJson(data);
         }
     }
 }

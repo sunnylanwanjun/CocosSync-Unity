@@ -70,7 +70,8 @@ namespace CocosSync
                     asset.shouldCheckSrc = false;
 
                     asset.Sync(filter.sharedMesh, comp.subMeshStartIndex, comp.sharedMaterials.Length);
-                    CocosSyncTool.sceneData.assets.Add(asset.GetData());
+
+                    SyncAssetData.AddAssetData(asset);
                 }
                 else
                 {

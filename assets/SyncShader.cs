@@ -14,7 +14,6 @@ namespace CocosSync
         {
             this.name = "cc.Shader";
         }
-
         public override string GetData()
         {
             return JsonUtility.ToJson(this);

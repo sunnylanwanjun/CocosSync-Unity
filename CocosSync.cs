@@ -34,7 +34,7 @@ namespace CocosSync
 
         public string assetBasePath = "";
         public string exportBasePath = "Exported";
-        public Dictionary<string, Dictionary<string, SyncAssetData>> assetsMap = new Dictionary<string, Dictionary<string, SyncAssetData>>();
+        public Dictionary<string, SyncAssetData> assetsMap = new Dictionary<string, SyncAssetData>();
         public List<string> assets = new List<string>();
 
         public bool forceSyncAsset = false;
@@ -44,7 +44,8 @@ namespace CocosSync
     {
         public static CocosSyncTool Instance
         {
-            get {
+            get
+            {
                 return EditorWindow.GetWindow<CocosSyncTool>();
             }
         }
@@ -87,6 +88,27 @@ namespace CocosSync
                 {
                     Debug.LogError(string.Format("Error: {0}", args[0].ToString()));
                 });
+
+                Manager.Socket.On("get-asset-detail", (socket, packet, args) =>
+                {
+                    var uuid = args[0].ToString();
+                    if (CocosSyncTool.sceneData == null)
+                    {
+                        Manager.Socket.Emit("get-asset-detail", uuid, null);
+                        return;
+                    }
+
+                    SyncAssetData asset = null;
+                    CocosSyncTool.sceneData.assetsMap.TryGetValue(uuid, out asset);
+
+                    var detail = "";
+                    if (asset != null)
+                    {
+                        detail = asset.GetDetailData();
+                    }
+                    Manager.Socket.Emit("get-asset-detail", uuid, detail);
+                });
+
             }
         }
 
@@ -185,10 +207,26 @@ namespace CocosSync
             sceneData.exportBasePath = this.exportBasePath;
             sceneData.forceSyncAsset = this.ForceSyncAsset;
 
+            // serialize assets
+            foreach (var pair in sceneData.assetsMap)
+            {
+                var uuid = pair.Key;
+                var asset = pair.Value;
+
+                if (asset is SyncTextureData)
+                {
+                    CocosSyncTool.sceneData.assets.Insert(0, asset.GetData());
+                }
+                else
+                {
+                    CocosSyncTool.sceneData.assets.Add(asset.GetData());
+                }
+            }
+
             object jsonData = JsonUtility.ToJson(sceneData);
             Manager.Socket.Emit("sync-datas", jsonData);
 
-            sceneData = null;
+            // sceneData = null;
 
             Debug.Log("End Sync: " + DateTime.Now.Subtract(now).Milliseconds.ToString());
         }

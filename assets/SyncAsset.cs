@@ -33,18 +33,10 @@ namespace CocosSync
                 return null;
             }
 
-            Dictionary<string, SyncAssetData> assetPack;
-            CocosSyncTool.sceneData.assetsMap.TryGetValue(uuid, out assetPack);
-
-            if (assetPack == null)
-            {
-                assetPack = new Dictionary<string, SyncAssetData>();
-                CocosSyncTool.sceneData.assetsMap.Add(uuid, assetPack);
-            }
-
+            uuid = uuid + "/" + obj.name;
 
             SyncAssetData asset = null;
-            assetPack.TryGetValue(obj.name, out asset);
+            CocosSyncTool.sceneData.assetsMap.TryGetValue(uuid, out asset);
 
             if (asset != null)
             {
@@ -53,25 +45,34 @@ namespace CocosSync
 
             asset = new IDataType();
 
-            asset.uuid = uuid + "/" + obj.name;
-
+            asset.uuid = uuid;
+            
             asset.path = path;
             asset.path = asset.path.Replace("Assets/", "");
 
             asset.Sync(obj, param1);
 
-            assetPack.Add(obj.name, asset);
-
-            if (asset is SyncTextureData)
-            {
-                CocosSyncTool.sceneData.assets.Insert(0, asset.GetData());
-            }
-            else
-            {
-                CocosSyncTool.sceneData.assets.Add(asset.GetData());
-            }
+            AddAssetData(asset, false);
 
             return asset as IDataType;
+        }
+
+        public static void AddAssetData(SyncAssetData asset, bool checkExists = true)
+        {
+            if (checkExists)
+            {
+                SyncAssetData tmpAsset = null;
+                CocosSyncTool.sceneData.assetsMap.TryGetValue(asset.uuid, out tmpAsset);
+
+                if (tmpAsset != null)
+                {
+                    CocosSyncTool.sceneData.assetsMap.Remove(asset.uuid);
+                    CocosSyncTool.sceneData.assetsMap.Add(asset.uuid, asset);
+                    return;
+                }
+            }
+
+            CocosSyncTool.sceneData.assetsMap.Add(asset.uuid, asset);
         }
 
         public virtual void Sync(UnityEngine.Object obj, object param1 = null)
@@ -82,6 +83,11 @@ namespace CocosSync
         public virtual string GetData()
         {
             return JsonUtility.ToJson(this);
+        }
+
+        public virtual string GetDetailData()
+        {
+            return "";
         }
     }
 }
