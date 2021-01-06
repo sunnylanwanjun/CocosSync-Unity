@@ -21,7 +21,8 @@ namespace CocosSync
         public Vector3 eulerAngles;
         public bool needMerge = false;
 
-        public List<SyncNodeData> children = new List<SyncNodeData>();
+        // public List<SyncNodeData> children = new List<SyncNodeData>();
+        public List<string> children = new List<string>();
         public List<string> components = new List<string>();
     }
 
@@ -196,12 +197,13 @@ namespace CocosSync
                     pdata = ExportNode(curr, true);
                 }
 
-                if (rootData != null)
+                var lastData = rootData;
+                rootData = pdata;
+                if (lastData != null)
                 {
-                    pdata.children.Add(rootData);
+                    rootData.children.Add(JsonUtility.ToJson(lastData));
                 }
 
-                rootData = pdata;
                 curr = curr.parent;
             }
 
@@ -310,7 +312,7 @@ namespace CocosSync
                         continue;
                     }
                     var childData = ExportNode(c, syncComponent, syncChildren);
-                    data.children.Add(childData);
+                    data.children.Add(JsonUtility.ToJson(childData));
                 }
             }
 

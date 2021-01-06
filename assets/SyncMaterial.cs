@@ -20,14 +20,41 @@ namespace CocosSync
         public int cullMode;
     }
 
+    public enum BlendMode
+    {
+        Opaque,
+        Cutout,
+        Fade,
+        Transparent
+    }
+
+    public enum SmoothChannel
+    {
+        None,
+        Albedo_A,
+        Metallic_A,
+    }
+
     [Serializable]
     class SyncMaterialData : SyncAssetData
     {
         public String shaderUuid = "";
         public List<SyncShaderProperty> properties = new List<SyncShaderProperty>();
         public SyncPassState passState = new SyncPassState();
-        
-        public bool hasLightMap = false; 
+        public string technique = "opaque";
+
+        public bool hasLightMap = false;
+        public List<string> defines = new List<string>();
+
+        void ModifyValue(Dictionary<string, SyncShaderProperty> propertyMap, string name, string value)
+        {
+            SyncShaderProperty prop;
+            propertyMap.TryGetValue(name, out prop);
+            if (prop != null)
+            {
+                prop.value = value;
+            }
+        }
 
         public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
@@ -36,14 +63,18 @@ namespace CocosSync
             Material m = obj as Material;
 
             var meshRenderer = param1 as SyncMeshRendererData;
-            if (meshRenderer != null) {
+            if (meshRenderer != null)
+            {
                 this.hasLightMap = meshRenderer.lightmapSetting != null;
             }
 
             var shader = SyncAssetData.GetAssetData<SyncShaderData>(m.shader);
-            if (shader != null) {
+            if (shader != null)
+            {
                 this.shaderUuid = shader.uuid;
             }
+
+            var propertyMap = new Dictionary<string, SyncShaderProperty>();
 
             for (var pi = 0; pi < m.shader.GetPropertyCount(); pi++)
             {
@@ -56,11 +87,13 @@ namespace CocosSync
 
                 this.properties.Add(prop);
 
+                propertyMap.Add(name, prop);
+
                 if (type == UnityEngine.Rendering.ShaderPropertyType.Color)
                 {
                     prop.value = JsonUtility.ToJson(m.GetColor(name));
                 }
-                else if (type == UnityEngine.Rendering.ShaderPropertyType.Float)
+                else if (type == UnityEngine.Rendering.ShaderPropertyType.Float || type == UnityEngine.Rendering.ShaderPropertyType.Range)
                 {
                     prop.value = m.GetFloat(name).ToString();
                 }
@@ -70,7 +103,8 @@ namespace CocosSync
                     if (t)
                     {
                         var tex = SyncAssetData.GetAssetData<SyncTextureData>(t);
-                        if (tex != null) {
+                        if (tex != null)
+                        {
                             prop.value = tex.uuid;
                         }
                     }
@@ -81,8 +115,51 @@ namespace CocosSync
                 }
             }
 
-            if (m.HasProperty("_Cull")) {
-                this.passState.cullMode = m.GetInt("_Cull");
+            // defines
+            SmoothChannel smoothChannel = SmoothChannel.None;
+
+            var shaderKeywords = m.shaderKeywords;
+            if (Array.IndexOf(shaderKeywords, "_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A") != -1)
+            {
+                smoothChannel = SmoothChannel.Albedo_A;
+            }
+
+            if (propertyMap.ContainsKey("_MetallicGlossMap"))
+            {
+                if (smoothChannel == SmoothChannel.None)
+                {
+                    smoothChannel = SmoothChannel.Metallic_A;
+                }
+
+                ModifyValue(propertyMap, "_Metallic", "1");
+            }
+
+            if (smoothChannel != SmoothChannel.None)
+            {
+                float glossMapScale = 1;
+                if (m.HasProperty("_GlossMapScale"))
+                {
+                    glossMapScale = m.GetFloat("_GlossMapScale");
+                }
+                ModifyValue(propertyMap, "_Glossiness", glossMapScale.ToString());
+            }
+
+            defines.Add("USE_SMOOTH_CHANNEL=" + (int)smoothChannel);
+
+            // pipeline state
+            if (m.HasProperty("_Cull"))
+            {
+                passState.cullMode = m.GetInt("_Cull");
+            }
+
+            // technique
+            if (m.HasProperty("_Mode"))
+            {
+                var mode = m.GetFloat("_Mode");
+                if ((BlendMode)mode == BlendMode.Transparent)
+                {
+                    technique = "transparent";
+                }
             }
         }
 

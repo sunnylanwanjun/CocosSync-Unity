@@ -35,7 +35,7 @@ namespace CocosSync
             this.color.Add(light.color.g);
             this.color.Add(light.color.b);
             this.color.Add(light.color.a);
-            this.luminance = light.intensity * (float)3.14 * 3;
+            this.luminance = light.intensity;// * (float)3.14 * 3;
         }
 
         public override string GetData()
