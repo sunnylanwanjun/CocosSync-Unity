@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -34,6 +35,7 @@ namespace CocosSync
         public List<SyncNodeData> children = new List<SyncNodeData>();
 
         public string assetBasePath = "";
+        public string projectPath = "";
         public string exportBasePath = "Exported";
         public Dictionary<string, SyncAssetData> assetsMap = new Dictionary<string, SyncAssetData>();
         public List<string> assets = new List<string>();
@@ -60,6 +62,8 @@ namespace CocosSync
         public static SyncSceneData sceneData = null;
 
         public string exportBasePath = "Exported";
+
+        private List<IEnumerator<object>> process = new List<IEnumerator<object>>();
 
 
         [MenuItem("Cocos/Sync Tool")]
@@ -92,24 +96,64 @@ namespace CocosSync
 
                 Manager.Socket.On("get-asset-detail", (socket, packet, args) =>
                 {
-                    var uuid = args[0].ToString();
-                    if (CocosSyncTool.sceneData == null)
-                    {
-                        Manager.Socket.Emit("get-asset-detail", uuid, null);
-                        return;
-                    }
-
-                    SyncAssetData asset = null;
-                    CocosSyncTool.sceneData.assetsMap.TryGetValue(uuid, out asset);
-
-                    var detail = "";
-                    if (asset != null)
-                    {
-                        detail = asset.GetDetailData();
-                    }
-                    Manager.Socket.Emit("get-asset-detail", uuid, detail);
+                    // Debug.Log("get-asset-detail : Receive message : " + DateTime.Now);
+                    CocosSyncTool.Instance.process.Add(OnGetDetail(socket, packet, args));
                 });
+            }
+        }
 
+        static IEnumerator<object> OnGetDetail(Socket socket, Packet packet, params object[] args)
+        {
+            var uuid = args[0].ToString();
+            if (CocosSyncTool.sceneData == null)
+            {
+                Manager.Socket.Emit("get-asset-detail", uuid, null);
+                yield return null;
+            }
+
+            SyncAssetData asset = null;
+            CocosSyncTool.sceneData.assetsMap.TryGetValue(uuid, out asset);
+
+            // Debug.Log("get-asset-detail : Process Asset data : " + DateTime.Now);
+
+            var detail = "";
+            if (asset != null)
+            {
+                detail = asset.GetDetailData();
+            }
+
+            for (var i = 0; i < 10; i++)
+            {
+                if (Manager.State == SocketManager.States.Closed)
+                {
+                    yield return new WaitForSeconds(0.5f);
+                }
+            }
+
+            // var now = DateTime.Now;
+            // Debug.Log("get-asset-detail : Finished process data : " + now);
+
+            string tempPath = "Temp/CocosSync/get-asset-detail.json";
+            if (!Directory.Exists("Temp/CocosSync"))
+            {
+                Directory.CreateDirectory("Temp/CocosSync");
+            }
+            StreamWriter writer = new StreamWriter(tempPath);
+            writer.WriteLine(detail);
+            writer.Close();
+
+            Manager.Socket.Emit("get-asset-detail", uuid, tempPath);
+            // Debug.Log("get-asset-detail : Finished send data: " + DateTime.Now + " : " + DateTime.Now.Subtract(now).Milliseconds.ToString() + "ms");
+        }
+
+        void Update()
+        {
+            for (var i = process.Count - 1; i >= 0; i--)
+            {
+                if (!process[i].MoveNext())
+                {
+                    process.RemoveAt(i);
+                }
             }
         }
 
@@ -210,6 +254,7 @@ namespace CocosSync
             sceneData.children.Add(rootData);
 
             sceneData.assetBasePath = Application.dataPath;
+            sceneData.projectPath = Path.Combine( Application.dataPath, "../" );
             sceneData.exportBasePath = this.exportBasePath;
             sceneData.forceSyncAsset = this.ForceSyncAsset;
 

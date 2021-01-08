@@ -67,6 +67,22 @@ namespace CocosSync
 
         public override string GetDetailData()
         {
+
+            var isHDR = false;
+            var lowerPath = this.path.ToLower();
+            if (lowerPath.EndsWith(".exr") || lowerPath.EndsWith(".hdr"))
+            {
+                isHDR = true;
+            }
+
+            var format = RenderTextureFormat.ARGB32;
+            var colorSpace = RenderTextureReadWrite.sRGB;
+            if (isHDR)
+            {
+                format = RenderTextureFormat.DefaultHDR;
+                colorSpace = RenderTextureReadWrite.Linear;
+            }
+
             var image = new SyncTextureDataDetail();
             image.width = texture.width;
             image.height = texture.height;
@@ -76,9 +92,11 @@ namespace CocosSync
                 texture.width,
                 texture.height,
                 0,
-                RenderTextureFormat.DefaultHDR,
-                RenderTextureReadWrite.Linear
+                format,
+                colorSpace
             );
+
+            // Material material = new Material(Shader.Find("Unlit/Texture"));
 
             // 将texture的像素复制到RenderTexture
             Graphics.Blit(texture, tmp);
@@ -94,12 +112,8 @@ namespace CocosSync
             // 重置激活的RenderTexture
             RenderTexture.active = previous;
 
-            var isHDR = false;
-            var lowerPath = this.path.ToLower();
-            if (lowerPath.EndsWith(".exr") || lowerPath.EndsWith(".hdr"))
-            {
-                isHDR = true;
-            }
+            // Graphics.CopyTexture(texture, newTexture2D);
+
 
             // Gets colors
             Color[] colors = null;
@@ -132,18 +146,32 @@ namespace CocosSync
                     var ci = cw + ch * texture.width;
                     if (!isHDR)
                     {
+                        var alpha = colors32[ci].a;
                         tmpColor.x = colors32[ci].r;
                         tmpColor.y = colors32[ci].g;
                         tmpColor.z = colors32[ci].b;
-                        tmpColor.w = colors32[ci].a;
+                        tmpColor.w = alpha;
+                        // if (alpha != 0)
+                        // {
+                        //     tmpColor.x *= ((float)alpha / 255);
+                        //     tmpColor.y *= ((float)alpha / 255);
+                        //     tmpColor.z *= ((float)alpha / 255);
+                        // }
                     }
                     else
                     {
-                        float scale = 1;
-                        tmpColor.x = colors[ci].r * scale;
-                        tmpColor.y = colors[ci].g * scale;
-                        tmpColor.z = colors[ci].b * scale;
-                        tmpColor.w = colors[ci].a * scale;
+                        var alpha = colors[ci].a;
+                        tmpColor.x = colors[ci].r;
+                        tmpColor.y = colors[ci].g;
+                        tmpColor.z = colors[ci].b;
+                        tmpColor.w = alpha;
+
+                        // if (alpha != 0)
+                        // {
+                        //     tmpColor.x *= ((float)alpha);
+                        //     tmpColor.y *= ((float)alpha);
+                        //     tmpColor.z *= ((float)alpha);
+                        // }
 
                         HDR2RGBE(tmpColor, out tmpColor);
                     }
