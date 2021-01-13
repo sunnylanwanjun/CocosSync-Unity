@@ -26,11 +26,17 @@ namespace CocosSync
         public string mesh = "";
         public string lightmapSetting;
 
+        public bool casterShadow = false;
+        public bool receiveShadow = true;
+
         public override void Sync(Component c)
         {
             MeshRenderer comp = c as MeshRenderer;
 
             this.name = "cc.MeshRenderer";
+
+            this.casterShadow = comp.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off;
+            this.receiveShadow = comp.receiveShadows;
 
             if (comp.lightmapIndex >= 0 && LightmapSettings.lightmaps.Length > comp.lightmapIndex)
             {
