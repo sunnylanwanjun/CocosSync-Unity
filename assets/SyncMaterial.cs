@@ -124,7 +124,7 @@ namespace CocosSync
                 smoothChannel = SmoothChannel.Albedo_A;
             }
 
-            if (propertyMap.ContainsKey("_MetallicGlossMap"))
+            if (m.HasProperty("_MetallicGlossMap") && m.GetTexture("_MetallicGlossMap") != null)
             {
                 if (smoothChannel == SmoothChannel.None)
                 {
