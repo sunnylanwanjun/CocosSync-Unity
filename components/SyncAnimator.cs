@@ -9,6 +9,7 @@ namespace CocosSync
     [Serializable]
     class SyncAnimatorData : SyncComponentData
     {
+        public List<string> clips = new List<string>();
 
         public override void Sync(Component c)
         {
@@ -18,7 +19,7 @@ namespace CocosSync
             {
                 return;
             }
-            this.name = "cc.Animator";
+            this.name = "SyncAnimatorComponent";
 
             var humanDescription = avatar.humanDescription;
             var humanBone = humanDescription.human;
@@ -33,7 +34,8 @@ namespace CocosSync
 
             foreach (var clip in clips)
             {
-
+                var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clip, avatar.isHuman);
+                this.clips.Add(clipData.uuid);
             }
         }
 
