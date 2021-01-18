@@ -315,6 +315,10 @@ namespace CocosSync
                     {
                         compData = new SyncMeshRendererData();
                     }
+                    else if (comp is SkinnedMeshRenderer)
+                    {
+                        compData = new SyncSkinnedMeshRendererData();
+                    }
                     else if (comp is InstanceObject)
                     {
                         data.needMerge = true;
