@@ -61,10 +61,33 @@ namespace CocosSync
             this.name = "cc.Material";
 
             Material m = obj as Material;
+            var propertyMap = new Dictionary<string, SyncShaderProperty>();
 
             var meshRenderer = param1 as SyncMeshRendererData;
             if (meshRenderer != null)
             {
+                List<UnityEngine.Rendering.ReflectionProbeBlendInfo> probes = new List<UnityEngine.Rendering.ReflectionProbeBlendInfo>();
+                meshRenderer.comp.GetClosestReflectionProbes(probes);
+
+                if (probes.Count != 0)
+                {
+                    var texture = probes[0].probe.texture;
+                    if (texture)
+                    {
+                        var prop = new SyncShaderProperty();
+                        prop.type = (int)UnityEngine.Rendering.ShaderPropertyType.Texture;
+                        prop.name = name;
+                        var syncTex = SyncAssetData.GetAssetData<SyncTextureData>(texture);
+                        if (syncTex != null)
+                        {
+                            prop.value = syncTex.uuid;
+                        }
+
+                        propertyMap.Add("_EnvTexture", prop);
+                    }
+
+                }
+
                 this.hasLightMap = meshRenderer.lightmapSetting != null;
             }
 
@@ -74,7 +97,6 @@ namespace CocosSync
                 this.shaderUuid = shader.uuid;
             }
 
-            var propertyMap = new Dictionary<string, SyncShaderProperty>();
 
             for (var pi = 0; pi < m.shader.GetPropertyCount(); pi++)
             {

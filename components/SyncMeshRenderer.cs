@@ -29,9 +29,11 @@ namespace CocosSync
         public bool casterShadow = false;
         public bool receiveShadow = true;
 
+        public MeshRenderer comp;
+
         public override void Sync(Component c)
         {
-            MeshRenderer comp = c as MeshRenderer;
+            comp = c as MeshRenderer;
 
             this.name = "cc.MeshRenderer";
 
