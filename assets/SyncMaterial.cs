@@ -103,6 +103,11 @@ namespace CocosSync
                 var type = m.shader.GetPropertyType(pi);
                 var name = m.shader.GetPropertyName(pi);
 
+                if (propertyMap.ContainsKey(name))
+                {
+                    continue;
+                }
+
                 var prop = new SyncShaderProperty();
                 prop.type = (int)type;
                 prop.name = name;
@@ -164,6 +169,7 @@ namespace CocosSync
                     glossMapScale = m.GetFloat("_GlossMapScale");
                 }
                 ModifyValue(propertyMap, "_Glossiness", glossMapScale.ToString());
+                ModifyValue(propertyMap, "_Smoothness", glossMapScale.ToString());
             }
 
             defines.Add("USE_SMOOTH_CHANNEL=" + (int)smoothChannel);
@@ -179,6 +185,14 @@ namespace CocosSync
             {
                 var mode = m.GetFloat("_Mode");
                 if ((BlendMode)mode == BlendMode.Transparent)
+                {
+                    technique = "transparent";
+                }
+            }
+            else if (m.HasProperty("_Surface"))
+            {
+                var mode = m.GetFloat("_Surface");
+                if (mode == 1)
                 {
                     technique = "transparent";
                 }

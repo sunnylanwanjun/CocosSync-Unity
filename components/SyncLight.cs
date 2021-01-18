@@ -28,6 +28,9 @@ namespace CocosSync
             else if (light.type == LightType.Spot)
             {
                 this.name = "cc.SpotLight";
+
+                float creatorDefaultExposure = (float)3.840001516342762;
+                this.luminance = light.intensity * creatorDefaultExposure;
             }
 
             this.range = this.size = light.range;
@@ -35,9 +38,6 @@ namespace CocosSync
             this.color.Add(light.color.g);
             this.color.Add(light.color.b);
             this.color.Add(light.color.a);
-
-            float creatorDefaultExposure = (float)3.840001516342762;
-            this.luminance = light.intensity * creatorDefaultExposure;
         }
 
         public override string GetData()
