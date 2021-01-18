@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -10,6 +11,12 @@ namespace CocosSync
     {
         RGBA,
         RGBE,
+    }
+
+    enum SyncTextureType
+    {
+        Texture,
+        Cube,
     }
 
     [Serializable]
@@ -30,14 +37,15 @@ namespace CocosSync
     [Serializable]
     class SyncTextureData : SyncAssetData
     {
+        public int type = (int)SyncTextureType.Texture;
 
-        float getExponent(float value)
+        static float getExponent(float value)
         {
             value = value / 255;
             return Mathf.Clamp(Mathf.Ceil(Mathf.Log(value, 2)), (float)-128.0, (float)127.0);
         }
 
-        void HDR2RGBE(Vector4 hdr, out Vector4 rgbe)
+        static void HDR2RGBE(Vector4 hdr, out Vector4 rgbe)
         {
             var maxComp = Mathf.Max(hdr.x, hdr.y, hdr.z);
             var e = Mathf.Clamp(Mathf.Ceil(Mathf.Log(maxComp, 2)) + 128, 0, 255);
@@ -49,13 +57,59 @@ namespace CocosSync
             rgbe.w = e;
         }
 
-        private Texture2D texture;
+        static Texture2D LoadTexture2D(string filePath, Texture texture)
+        {
+            // return AssetDatabase.LoadAssetAtPath<Texture2D>(filePath);
+
+            // Texture2D tex = null;
+            // byte[] fileData;
+
+            // if (File.Exists(filePath))
+            // {
+            //     fileData = File.ReadAllBytes(filePath);
+            //     tex = new Texture2D(texture.width, texture.height, TextureFormat.RGBAFloat, false);
+            //     // tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+            //     tex.LoadRawTextureData(fileData); //..this will auto-resize the texture dimensions.
+            // }
+            // return tex;
+
+            var cubemap = new Cubemap(texture.width, TextureFormat.RGBAFloat, false);
+
+
+            // var cubemap = texture as Cubemap;
+
+            var tex = new Texture2D(cubemap.width, cubemap.height, TextureFormat.RGBAFloat, false);
+            CubemapFace[] faces = new CubemapFace[] {
+                CubemapFace.PositiveX, CubemapFace.NegativeX,
+                CubemapFace.PositiveY, CubemapFace.NegativeY,
+                CubemapFace.PositiveZ, CubemapFace.NegativeZ };
+            foreach (CubemapFace face in faces)
+            {
+                tex.SetPixels(cubemap.GetPixels(face));
+                // File.WriteAllBytes(Application.dataPath + "/" + cubemap.name + "_" + face.ToString() + ".png",
+                //                     tex.EncodeToPNG());
+            }
+
+            return tex;
+        }
+
+        private Texture texture;
         private bool flipY = false;
 
         public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             name = "cc.Texture";
-            texture = obj as Texture2D;
+
+            texture = obj as Texture;
+
+            if (obj is Texture2D)
+            {
+                type = (int)SyncTextureType.Texture;
+            }
+            if (obj is Cubemap)
+            {
+                type = (int)SyncTextureType.Cube;
+            }
 
             flipY = param1 != null;
         }
@@ -75,42 +129,48 @@ namespace CocosSync
                 isHDR = true;
             }
 
-            var format = RenderTextureFormat.ARGB32;
-            var colorSpace = RenderTextureReadWrite.sRGB;
-            if (isHDR)
+            // var format = RenderTextureFormat.ARGB32;
+            // var colorSpace = RenderTextureReadWrite.sRGB;
+            // if (isHDR)
+            // {
+            //     format = RenderTextureFormat.DefaultHDR;
+            //     colorSpace = RenderTextureReadWrite.Linear;
+            // }
+
+            var newTexture2D = texture as Texture2D;
+            if (newTexture2D == null)
             {
-                format = RenderTextureFormat.DefaultHDR;
-                colorSpace = RenderTextureReadWrite.Linear;
+                newTexture2D = LoadTexture2D("Assets/" + path, texture);
             }
 
             var image = new SyncTextureDataDetail();
             image.width = texture.width;
             image.height = texture.height;
 
-            // 创建一张和texture大小相等的临时RenderTexture
-            RenderTexture tmp = RenderTexture.GetTemporary(
-                texture.width,
-                texture.height,
-                0,
-                format,
-                colorSpace
-            );
+            // // 创建一张和texture大小相等的临时RenderTexture
+            // RenderTexture tmp = RenderTexture.GetTemporary(
+            //     texture.width,
+            //     texture.height,
+            //     0,
+            //     format,
+            //     colorSpace
+            // );
 
-            // Material material = new Material(Shader.Find("Unlit/Texture"));
+            // // Material material = new Material(Shader.Find("Unlit/Texture"));
 
-            // 将texture的像素复制到RenderTexture
-            Graphics.Blit(texture, tmp);
-            // 备份当前设置的RenderTexture
-            RenderTexture previous = RenderTexture.active;
-            // 将创建的临时纹理tmp设置为当前RenderTexture
-            RenderTexture.active = tmp;
-            // 创建一张新的可读Texture2D，并拷贝像素值
-            Texture2D newTexture2D = new Texture2D(texture.width, texture.height);
-            // 将RenderTexture的像素值拷贝到新的纹理中
-            newTexture2D.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
-            newTexture2D.Apply();
-            // 重置激活的RenderTexture
-            RenderTexture.active = previous;
+            // // 将texture的像素复制到RenderTexture
+            // Graphics.Blit(texture, tmp);
+            // // 备份当前设置的RenderTexture
+            // RenderTexture previous = RenderTexture.active;
+            // // 将创建的临时纹理tmp设置为当前RenderTexture
+            // RenderTexture.active = tmp;
+            // // 创建一张新的可读Texture2D，并拷贝像素值
+            // Texture2D newTexture2D = new Texture2D(texture.width, texture.height);
+            // // 将RenderTexture的像素值拷贝到新的纹理中
+            // newTexture2D.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
+            // newTexture2D.Apply();
+            // // 重置激活的RenderTexture
+            // RenderTexture.active = previous;
 
             // Graphics.CopyTexture(texture, newTexture2D);
 
