@@ -57,49 +57,114 @@ namespace CocosSync
             rgbe.w = e;
         }
 
-        static Texture2D LoadTexture2D(string filePath, Texture texture)
+        Texture2D GetTexture2D()
         {
-            // return AssetDatabase.LoadAssetAtPath<Texture2D>(filePath);
-
-            // Texture2D tex = null;
-            // byte[] fileData;
-
-            // if (File.Exists(filePath))
-            // {
-            //     fileData = File.ReadAllBytes(filePath);
-            //     tex = new Texture2D(texture.width, texture.height, TextureFormat.RGBAFloat, false);
-            //     // tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-            //     tex.LoadRawTextureData(fileData); //..this will auto-resize the texture dimensions.
-            // }
-            // return tex;
-
-            var cubemap = new Cubemap(texture.width, TextureFormat.RGBAFloat, false);
-
-
-            // var cubemap = texture as Cubemap;
-
-            var tex = new Texture2D(cubemap.width, cubemap.height, TextureFormat.RGBAFloat, false);
-            CubemapFace[] faces = new CubemapFace[] {
-                CubemapFace.PositiveX, CubemapFace.NegativeX,
-                CubemapFace.PositiveY, CubemapFace.NegativeY,
-                CubemapFace.PositiveZ, CubemapFace.NegativeZ };
-            foreach (CubemapFace face in faces)
+            if (!texture.isReadable)
             {
-                tex.SetPixels(cubemap.GetPixels(face));
-                // File.WriteAllBytes(Application.dataPath + "/" + cubemap.name + "_" + face.ToString() + ".png",
-                //                     tex.EncodeToPNG());
+                return CreateTexture2D();
             }
 
-            return tex;
+            if (extName == ".psd")
+            {
+                flipY = !flipY;
+            }
+
+            if (texture is Texture2D)
+            {
+                return texture as Texture2D;
+            }
+            else
+            {
+                if (texture is Cubemap)
+                {
+                    var cubemap = texture as Cubemap;
+                    Texture2D tex = null;
+                    if (cubemap != null)
+                    {
+                        CubemapFace[] faces = new CubemapFace[] {
+                            CubemapFace.PositiveX, CubemapFace.NegativeX,
+                            CubemapFace.PositiveY, CubemapFace.NegativeY,
+                            CubemapFace.PositiveZ, CubemapFace.NegativeZ
+                        };
+
+                        tex = new Texture2D(cubemap.width * 6, cubemap.height, TextureFormat.RGBAFloat, false);
+                        var pixels = new List<Color>();
+                        for (var h = 0; h < cubemap.height; h++)
+                        {
+                            foreach (CubemapFace face in faces)
+                            {
+                                for (var w = 0; w < cubemap.width; w++)
+                                {
+                                    pixels.Add(cubemap.GetPixel(face, w, h));
+                                }
+                            }
+                        }
+                        tex.SetPixels(pixels.ToArray());
+                        return tex;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public Texture2D CreateTexture2D()
+        {
+            flipY = !flipY;
+
+            var format = RenderTextureFormat.ARGB32;
+            var colorSpace = RenderTextureReadWrite.sRGB;
+            if (isHDR)
+            {
+                format = RenderTextureFormat.DefaultHDR;
+                colorSpace = RenderTextureReadWrite.Linear;
+            }
+
+            // 创建一张和texture大小相等的临时RenderTexture
+            RenderTexture tmp = RenderTexture.GetTemporary(
+                texture.width,
+                texture.height,
+                0,
+                format,
+                colorSpace
+            );
+
+            // 将texture的像素复制到RenderTexture
+            Graphics.Blit(texture, tmp);
+            // 备份当前设置的RenderTexture
+            RenderTexture previous = RenderTexture.active;
+            // 将创建的临时纹理tmp设置为当前RenderTexture
+            RenderTexture.active = tmp;
+            // 创建一张新的可读Texture2D，并拷贝像素值
+            Texture2D newTexture2D = new Texture2D(texture.width, texture.height);
+            // 将RenderTexture的像素值拷贝到新的纹理中
+            newTexture2D.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
+            newTexture2D.Apply(false, false);
+            // 重置激活的RenderTexture
+            RenderTexture.active = previous;
+
+            // Graphics.CopyTexture(tmp, newTexture2D);
+
+            return newTexture2D;
         }
 
         private Texture texture;
         private bool flipY = false;
+        private string extName = "";
+        private bool isHDR = false;
 
         public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             name = "cc.Texture";
 
+            //
+            var lowerPath = this.path.ToLower();
+            extName = Path.GetExtension(lowerPath);
+            if (extName == ".exr" || extName == ".hdr")
+            {
+                isHDR = true;
+            }
+            // 
             texture = obj as Texture;
 
             if (obj is Texture2D)
@@ -121,59 +186,11 @@ namespace CocosSync
 
         public override string GetDetailData()
         {
-
-            var isHDR = false;
-            var lowerPath = this.path.ToLower();
-            if (lowerPath.EndsWith(".exr") || lowerPath.EndsWith(".hdr"))
-            {
-                isHDR = true;
-            }
-
-            // var format = RenderTextureFormat.ARGB32;
-            // var colorSpace = RenderTextureReadWrite.sRGB;
-            // if (isHDR)
-            // {
-            //     format = RenderTextureFormat.DefaultHDR;
-            //     colorSpace = RenderTextureReadWrite.Linear;
-            // }
-
-            var newTexture2D = texture as Texture2D;
-            if (newTexture2D == null)
-            {
-                newTexture2D = LoadTexture2D("Assets/" + path, texture);
-            }
+            var newTexture2D = GetTexture2D();
 
             var image = new SyncTextureDataDetail();
-            image.width = texture.width;
-            image.height = texture.height;
-
-            // // 创建一张和texture大小相等的临时RenderTexture
-            // RenderTexture tmp = RenderTexture.GetTemporary(
-            //     texture.width,
-            //     texture.height,
-            //     0,
-            //     format,
-            //     colorSpace
-            // );
-
-            // // Material material = new Material(Shader.Find("Unlit/Texture"));
-
-            // // 将texture的像素复制到RenderTexture
-            // Graphics.Blit(texture, tmp);
-            // // 备份当前设置的RenderTexture
-            // RenderTexture previous = RenderTexture.active;
-            // // 将创建的临时纹理tmp设置为当前RenderTexture
-            // RenderTexture.active = tmp;
-            // // 创建一张新的可读Texture2D，并拷贝像素值
-            // Texture2D newTexture2D = new Texture2D(texture.width, texture.height);
-            // // 将RenderTexture的像素值拷贝到新的纹理中
-            // newTexture2D.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
-            // newTexture2D.Apply();
-            // // 重置激活的RenderTexture
-            // RenderTexture.active = previous;
-
-            // Graphics.CopyTexture(texture, newTexture2D);
-
+            image.width = newTexture2D.width;
+            image.height = newTexture2D.height;
 
             // Gets colors
             Color[] colors = null;
@@ -188,50 +205,35 @@ namespace CocosSync
                 colors32 = newTexture2D.GetPixels32(0);
             }
 
-            var start = texture.height - 1;
-            var end = -1;
-            var step = -1;
+            var start = 0;
+            var end = newTexture2D.height;
+            var step = 1;
             if (flipY)
             {
-                start = 0;
-                end = texture.height;
-                step = 1;
+                start = newTexture2D.height - 1;
+                end = -1;
+                step = -1;
             }
 
             var tmpColor = new Vector4();
             for (var ch = start; ch != end; ch += step)
             {
-                for (var cw = 0; cw < texture.width; cw++)
+                for (var cw = 0; cw < newTexture2D.width; cw++)
                 {
-                    var ci = cw + ch * texture.width;
+                    var ci = cw + ch * newTexture2D.width;
                     if (!isHDR)
                     {
-                        var alpha = colors32[ci].a;
                         tmpColor.x = colors32[ci].r;
                         tmpColor.y = colors32[ci].g;
                         tmpColor.z = colors32[ci].b;
-                        tmpColor.w = alpha;
-                        // if (alpha != 0)
-                        // {
-                        //     tmpColor.x *= ((float)alpha / 255);
-                        //     tmpColor.y *= ((float)alpha / 255);
-                        //     tmpColor.z *= ((float)alpha / 255);
-                        // }
+                        tmpColor.w = colors32[ci].a;
                     }
                     else
                     {
-                        var alpha = colors[ci].a;
                         tmpColor.x = colors[ci].r;
                         tmpColor.y = colors[ci].g;
                         tmpColor.z = colors[ci].b;
-                        tmpColor.w = alpha;
-
-                        // if (alpha != 0)
-                        // {
-                        //     tmpColor.x *= ((float)alpha);
-                        //     tmpColor.y *= ((float)alpha);
-                        //     tmpColor.z *= ((float)alpha);
-                        // }
+                        tmpColor.w = colors[ci].a;
 
                         HDR2RGBE(tmpColor, out tmpColor);
                     }

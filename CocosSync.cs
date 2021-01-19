@@ -254,7 +254,7 @@ namespace CocosSync
             sceneData.children.Add(rootData);
 
             sceneData.assetBasePath = Application.dataPath;
-            sceneData.projectPath = Path.Combine( Application.dataPath, "../" );
+            sceneData.projectPath = Path.Combine(Application.dataPath, "../");
             sceneData.exportBasePath = this.exportBasePath;
             sceneData.forceSyncAsset = this.ForceSyncAsset;
 
@@ -324,6 +324,10 @@ namespace CocosSync
                     else if (comp is Light)
                     {
                         compData = new SyncLightData();
+                    }
+                    else if (comp is ReflectionProbe)
+                    {
+                        compData = new SyncReflectionProbeData();
                     }
 
                     if (compData != null)
