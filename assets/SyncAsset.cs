@@ -15,6 +15,7 @@ namespace CocosSync
         public String path;
 
         public bool shouldCheckSrc = true;
+        public bool virtualAsset = false;
 
         public static IDataType GetAssetData<IDataType>(UnityEngine.Object obj, object param1 = null) where IDataType : SyncAssetData, new()
         {
@@ -46,7 +47,7 @@ namespace CocosSync
             asset = new IDataType();
 
             asset.uuid = uuid;
-            
+
             asset.path = path;
             asset.path = asset.path.Replace("Assets/", "");
 

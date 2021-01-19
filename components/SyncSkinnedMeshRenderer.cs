@@ -22,13 +22,14 @@ namespace CocosSync
             var meshData = SyncAssetData.GetAssetData<SyncMeshData>(renderer.sharedMesh);
             if (meshData != null)
             {
-                var path = Path.ChangeExtension(meshData.path, ".anim");
+                var path = Path.ChangeExtension(meshData.path, ".skeleton");
 
                 var asset = new SyncSkeletonData();
                 asset.uuid = path;
                 asset.path = path;
 
                 asset.shouldCheckSrc = false;
+                asset.virtualAsset = true;
                 asset.Sync(null, renderer);
 
                 SyncAssetData.AddAssetData(asset);

@@ -31,10 +31,11 @@ namespace CocosSync
 
         public List<string> probes = new List<string>();
 
-        public MeshRenderer comp;
+        public MeshRenderer meshRenderer;
 
         public override void Sync(Component c)
         {
+            meshRenderer = c as MeshRenderer;
             Renderer comp = c as Renderer;
 
             this.name = "cc.MeshRenderer";

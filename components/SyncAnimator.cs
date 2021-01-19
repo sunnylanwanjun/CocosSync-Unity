@@ -19,7 +19,7 @@ namespace CocosSync
             {
                 return;
             }
-            this.name = "SyncAnimatorComponent";
+            this.name = "sync.AnimatorComponent";
 
             var humanDescription = avatar.humanDescription;
             var humanBone = humanDescription.human;
