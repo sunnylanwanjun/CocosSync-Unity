@@ -315,6 +315,10 @@ namespace CocosSync
                     {
                         compData = new SyncMeshRendererData();
                     }
+                    else if (comp is SkinnedMeshRenderer)
+                    {
+                        compData = new SyncSkinnedMeshRendererData();
+                    }
                     else if (comp is InstanceObject)
                     {
                         data.needMerge = true;
@@ -328,6 +332,10 @@ namespace CocosSync
                     else if (comp is ReflectionProbe)
                     {
                         compData = new SyncReflectionProbeData();
+                    }
+                    else if (comp is Animator)
+                    {
+                        compData = new SyncAnimatorData();
                     }
 
                     if (compData != null)
