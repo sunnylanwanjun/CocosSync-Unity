@@ -29,6 +29,8 @@ namespace CocosSync
         public bool casterShadow = false;
         public bool receiveShadow = true;
 
+        public List<string> probes = new List<string>();
+
         public MeshRenderer comp;
 
         public override void Sync(Component c)
@@ -44,7 +46,7 @@ namespace CocosSync
             {
                 var lightmapData = LightmapSettings.lightmaps.GetValue(comp.lightmapIndex) as LightmapData;
 
-                var lightmapTex = SyncAssetData.GetAssetData<SyncTextureData>(lightmapData.lightmapColor, true);
+                var lightmapTex = SyncAssetData.GetAssetData<SyncTextureData>(lightmapData.lightmapColor);
                 if (lightmapTex != null)
                 {
                     var lightmapSetting = new SyncLightMapSetting();
@@ -88,6 +90,17 @@ namespace CocosSync
                     {
                         this.mesh = meshData.uuid;
                     }
+                }
+            }
+
+            List<UnityEngine.Rendering.ReflectionProbeBlendInfo> probes = new List<UnityEngine.Rendering.ReflectionProbeBlendInfo>();
+            comp.GetClosestReflectionProbes(probes);
+
+            if (probes.Count != 0)
+            {
+                foreach (var probe in probes)
+                {
+                    this.probes.Add(Hierarchy.GetPath(probe.probe.transform, null));
                 }
             }
         }

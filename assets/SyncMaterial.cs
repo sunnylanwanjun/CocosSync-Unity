@@ -71,21 +71,7 @@ namespace CocosSync
 
                 if (probes.Count != 0)
                 {
-                    var texture = probes[0].probe.texture;
-                    if (texture)
-                    {
-                        var prop = new SyncShaderProperty();
-                        prop.type = (int)UnityEngine.Rendering.ShaderPropertyType.Texture;
-                        prop.name = name;
-                        var syncTex = SyncAssetData.GetAssetData<SyncTextureData>(texture);
-                        if (syncTex != null)
-                        {
-                            prop.value = syncTex.uuid;
-                        }
-
-                        propertyMap.Add("_EnvTexture", prop);
-                    }
-
+                    defines.Add("USE_IBL=" + 2);
                 }
 
                 this.hasLightMap = meshRenderer.lightmapSetting != null;
