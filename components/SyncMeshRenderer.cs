@@ -31,11 +31,12 @@ namespace CocosSync
 
         public List<string> probes = new List<string>();
 
-        public MeshRenderer comp;
+        public MeshRenderer meshRenderer;
 
         public override void Sync(Component c)
         {
-            comp = c as MeshRenderer;
+            meshRenderer = c as MeshRenderer;
+            Renderer comp = c as Renderer;
 
             this.name = "cc.MeshRenderer";
 
@@ -71,17 +72,21 @@ namespace CocosSync
             {
                 if (filter.sharedMesh.name.StartsWith("Combined Mesh"))
                 {
-                    var path = "CombinedMesh/" + filter.name + "_" + (comp.subMeshStartIndex) + "_" + (comp.subMeshStartIndex + comp.sharedMaterials.Length - 1);
+                    var meshRenderer = comp as MeshRenderer;
+                    if (meshRenderer)
+                    {
+                        var path = "CombinedMesh/" + filter.name + "_" + (meshRenderer.subMeshStartIndex) + "_" + (meshRenderer.subMeshStartIndex + meshRenderer.sharedMaterials.Length - 1);
 
-                    var asset = new SyncMeshData();
-                    asset.uuid = path;
-                    asset.path = path;
+                        var asset = new SyncMeshData();
+                        asset.uuid = path;
+                        asset.path = path;
 
-                    asset.shouldCheckSrc = false;
+                        asset.shouldCheckSrc = false;
 
-                    asset.Sync(filter.sharedMesh, comp.subMeshStartIndex, comp.sharedMaterials.Length);
+                        asset.Sync(filter.sharedMesh, meshRenderer.subMeshStartIndex, meshRenderer.sharedMaterials.Length);
 
-                    SyncAssetData.AddAssetData(asset);
+                        SyncAssetData.AddAssetData(asset);
+                    }
                 }
                 else
                 {

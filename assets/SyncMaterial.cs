@@ -64,10 +64,10 @@ namespace CocosSync
             var propertyMap = new Dictionary<string, SyncShaderProperty>();
 
             var meshRenderer = param1 as SyncMeshRendererData;
-            if (meshRenderer != null)
+            if (meshRenderer != null && meshRenderer.meshRenderer != null)
             {
                 List<UnityEngine.Rendering.ReflectionProbeBlendInfo> probes = new List<UnityEngine.Rendering.ReflectionProbeBlendInfo>();
-                meshRenderer.comp.GetClosestReflectionProbes(probes);
+                meshRenderer.meshRenderer.GetClosestReflectionProbes(probes);
 
                 if (probes.Count != 0)
                 {
