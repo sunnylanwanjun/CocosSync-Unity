@@ -167,11 +167,35 @@ namespace CocosSync
                 return;
             }
 
-
-            if (GUILayout.Button("SyncSelect"))
+            var activeObject = Selection.activeObject;
+            if (activeObject == null)
             {
-                SyncSelect();
+                GUILayout.Label("Please select an object.");
+                return;
             }
+
+            if (Selection.activeTransform != null)
+            {
+                if (GUILayout.Button("SyncSelectNode"))
+                {
+                    SyncSelectNode();
+                }
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("MaxChildCount");
+                this.MaxChildCount = EditorGUILayout.IntField(this.MaxChildCount);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            if (activeObject is Texture)
+            {
+                if (GUILayout.Button("SyncSelectAsset"))
+                {
+                    SyncSelectAsset();
+                }
+            }
+
+
             // if (GUILayout.Button("SyncScene"))
             // {
             //     SyncScene();
@@ -185,11 +209,6 @@ namespace CocosSync
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label("ExportBasePath");
             this.exportBasePath = EditorGUILayout.TextField(this.exportBasePath);
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("MaxChildCount");
-            this.MaxChildCount = EditorGUILayout.IntField(this.MaxChildCount);
             EditorGUILayout.EndHorizontal();
 
         }
@@ -211,16 +230,23 @@ namespace CocosSync
             return provider.guid;
         }
 
-        void SyncSelect()
+        void SyncSelectAsset()
         {
-            if (Selection.activeTransform == null)
+            BeginSync();
+
+            if (Selection.activeObject is Texture)
             {
-                return;
+                SyncAssetData.GetAssetData<SyncTextureData>(Selection.activeObject);
             }
 
-            sceneData = new SyncSceneData();
+            SyncAssets();
+            EndSync();
+        }
 
-            var now = DateTime.Now;
+
+        void SyncSelectNode()
+        {
+            BeginSync();
 
             SyncNodeData rootData = null;
             SyncNodeData data = null;
@@ -253,11 +279,19 @@ namespace CocosSync
 
             sceneData.children.Add(rootData);
 
-            sceneData.assetBasePath = Application.dataPath;
-            sceneData.projectPath = Path.Combine(Application.dataPath, "../");
-            sceneData.exportBasePath = this.exportBasePath;
-            sceneData.forceSyncAsset = this.ForceSyncAsset;
+            SyncAssets();
+            EndSync();
+        }
 
+        DateTime beginTime;
+        void BeginSync()
+        {
+            sceneData = new SyncSceneData();
+            beginTime = DateTime.Now;
+        }
+
+        void SyncAssets()
+        {
             // serialize assets
             foreach (var pair in sceneData.assetsMap)
             {
@@ -273,13 +307,23 @@ namespace CocosSync
                     CocosSyncTool.sceneData.assets.Add(asset.GetData());
                 }
             }
+        }
+
+        void EndSync()
+        {
+            sceneData.assetBasePath = Application.dataPath;
+            sceneData.projectPath = Path.Combine(Application.dataPath, "../");
+            sceneData.exportBasePath = this.exportBasePath;
+            sceneData.forceSyncAsset = this.ForceSyncAsset;
+
+
 
             object jsonData = JsonUtility.ToJson(sceneData);
             Manager.Socket.Emit("sync-datas", jsonData);
 
             // sceneData = null;
 
-            Debug.Log("End Sync: " + DateTime.Now.Subtract(now).Milliseconds.ToString());
+            Debug.Log("End Sync: " + DateTime.Now.Subtract(beginTime).Milliseconds.ToString());
         }
 
         SyncNodeData ExportNode(Transform t, bool syncComponent = false, bool syncChildren = false)
