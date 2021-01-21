@@ -16,6 +16,7 @@ namespace CocosSync
         public List<float> normals = new List<float>();
         public List<float> colors = new List<float>();
         public List<float> boneWeights = new List<float>();
+        public List<float> joints = new List<float>();
         public List<int> indices = new List<int>();
     }
 
@@ -47,7 +48,7 @@ namespace CocosSync
 
             mesh = obj as Mesh;
             meshName = mesh.name;
-            
+
             min = mesh.bounds.min;
             max = mesh.bounds.max;
 
@@ -126,6 +127,11 @@ namespace CocosSync
                         smd.boneWeights.Add(weight.weight1);
                         smd.boneWeights.Add(weight.weight2);
                         smd.boneWeights.Add(weight.weight3);
+
+                        smd.joints.Add(weight.boneIndex0);
+                        smd.joints.Add(weight.boneIndex1);
+                        smd.joints.Add(weight.boneIndex2);
+                        smd.joints.Add(weight.boneIndex3);
                     }
 
                     if (uvs.Count != 0)
