@@ -20,6 +20,18 @@ namespace CocosSync
     }
 
     [Serializable]
+    class SyncMeshRendererProbe
+    {
+        public string probePath;
+        public float weight;
+
+        public string GetData()
+        {
+            return JsonUtility.ToJson(this);
+        }
+    }
+
+    [Serializable]
     class SyncMeshRendererData : SyncComponentData
     {
         public List<string> materilas = new List<string>();
@@ -105,7 +117,11 @@ namespace CocosSync
             {
                 foreach (var probe in probes)
                 {
-                    this.probes.Add(Hierarchy.GetPath(probe.probe.transform, null));
+                    var probeData = new SyncMeshRendererProbe();
+                    probeData.probePath = Hierarchy.GetPath(probe.probe.transform, null);
+                    probeData.weight = probe.weight;
+
+                    this.probes.Add(probeData.GetData());
                 }
             }
         }

@@ -20,6 +20,9 @@ namespace CocosSync
             if (light.type == LightType.Point)
             {
                 this.name = "cc.SphereLight";
+
+                float creatorDefaultExposure = 3.840001516342762f;
+                this.luminance = light.intensity;// * creatorDefaultExposure;
             }
             else if (light.type == LightType.Directional)
             {
@@ -29,8 +32,6 @@ namespace CocosSync
             {
                 this.name = "cc.SpotLight";
 
-                float creatorDefaultExposure = (float)3.840001516342762;
-                this.luminance = light.intensity * creatorDefaultExposure;
             }
 
             this.range = this.size = light.range;
