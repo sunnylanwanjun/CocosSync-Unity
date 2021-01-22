@@ -63,18 +63,18 @@ namespace CocosSync
             Material m = obj as Material;
             var propertyMap = new Dictionary<string, SyncShaderProperty>();
 
-            var meshRenderer = param1 as SyncMeshRendererData;
-            if (meshRenderer != null && meshRenderer.meshRenderer != null)
+            var rendererData = param1 as SyncRendererData;
+            if (rendererData != null && rendererData.comp != null)
             {
                 List<UnityEngine.Rendering.ReflectionProbeBlendInfo> probes = new List<UnityEngine.Rendering.ReflectionProbeBlendInfo>();
-                meshRenderer.meshRenderer.GetClosestReflectionProbes(probes);
+                rendererData.comp.GetClosestReflectionProbes(probes);
 
                 if (probes.Count != 0)
                 {
                     defines.Add("USE_IBL=" + 2);
                 }
 
-                this.hasLightMap = meshRenderer.lightmapSetting != null;
+                this.hasLightMap = rendererData.lightmapSetting != null;
             }
 
             var shader = SyncAssetData.GetAssetData<SyncShaderData>(m.shader);

@@ -20,11 +20,23 @@ namespace CocosSync
         public Vector3 position;
         public Vector3 scale;
         public Vector3 eulerAngles;
+        public Quaternion rotation;
         public bool needMerge = false;
 
-        // public List<SyncNodeData> children = new List<SyncNodeData>();
         public List<string> children = new List<string>();
         public List<string> components = new List<string>();
+
+        public List<SyncNodeData> childrenData = new List<SyncNodeData>();
+
+        public string GetData()
+        {
+            foreach (var data in childrenData)
+            {
+                this.children.Add(data.GetData());
+            }
+            childrenData.Clear();
+            return JsonUtility.ToJson(this);
+        }
     }
 
     [Serializable]
@@ -32,7 +44,8 @@ namespace CocosSync
     {
         public int nodeCount = 0;
         public int componentCount = 0;
-        public List<SyncNodeData> children = new List<SyncNodeData>();
+        public List<string> children = new List<string>();
+        public List<SyncNodeData> childrenData = new List<SyncNodeData>();
 
         public string assetBasePath = "";
         public string projectPath = "";
@@ -41,6 +54,16 @@ namespace CocosSync
         public List<string> assets = new List<string>();
 
         public string forceSyncAsset = "";
+
+        public string GetData()
+        {
+            foreach (var data in childrenData)
+            {
+                this.children.Add(data.GetData());
+            }
+            childrenData.Clear();
+            return JsonUtility.ToJson(this);
+        }
     }
 
     class CocosSyncTool : EditorWindow
@@ -64,6 +87,8 @@ namespace CocosSync
         public string exportBasePath = "Exported";
 
         private List<IEnumerator<object>> process = new List<IEnumerator<object>>();
+
+        private Dictionary<string, SyncNodeData> syncedNodes = new Dictionary<string, SyncNodeData>();
 
 
         [MenuItem("Cocos/Sync Tool")]
@@ -243,15 +268,10 @@ namespace CocosSync
             EndSync();
         }
 
-
-        void SyncSelectNode()
+        public void SyncNode(Transform t)
         {
-            BeginSync();
-
             SyncNodeData rootData = null;
             SyncNodeData data = null;
-
-            Transform t = Selection.activeTransform;
 
             Transform curr = t;
             while (curr)
@@ -271,13 +291,29 @@ namespace CocosSync
                 rootData = pdata;
                 if (lastData != null)
                 {
-                    rootData.children.Add(JsonUtility.ToJson(lastData));
+                    if (!syncedNodes.ContainsKey(lastData.uuid))
+                    {
+                        syncedNodes.Add(lastData.uuid, lastData);
+                        rootData.childrenData.Add(lastData);
+                    }
                 }
 
                 curr = curr.parent;
             }
 
-            sceneData.children.Add(rootData);
+            if (!syncedNodes.ContainsKey(rootData.uuid))
+            {
+                syncedNodes.Add(rootData.uuid, rootData);
+                sceneData.childrenData.Add(rootData);
+            }
+        }
+
+
+        void SyncSelectNode()
+        {
+            BeginSync();
+
+            SyncNode(Selection.activeTransform);
 
             SyncAssets();
             EndSync();
@@ -286,6 +322,7 @@ namespace CocosSync
         DateTime beginTime;
         void BeginSync()
         {
+            syncedNodes.Clear();
             sceneData = new SyncSceneData();
             beginTime = DateTime.Now;
         }
@@ -316,9 +353,7 @@ namespace CocosSync
             sceneData.exportBasePath = this.exportBasePath;
             sceneData.forceSyncAsset = this.ForceSyncAsset;
 
-
-
-            object jsonData = JsonUtility.ToJson(sceneData);
+            object jsonData = sceneData.GetData();
             Manager.Socket.Emit("sync-datas", jsonData);
 
             // sceneData = null;
@@ -328,13 +363,22 @@ namespace CocosSync
 
         SyncNodeData ExportNode(Transform t, bool syncComponent = false, bool syncChildren = false)
         {
-            SyncNodeData data = new SyncNodeData();
+            SyncNodeData data = null;
 
-            data.uuid = getGuid(t);
+            var uuid = getGuid(t);
+            if (syncedNodes.ContainsKey(uuid))
+            {
+                syncedNodes.TryGetValue(uuid, out data);
+                return data;
+            }
+
+            data = new SyncNodeData();
+            data.uuid = uuid;
             data.name = t.name;
             data.position = t.localPosition;
             data.scale = t.localScale;
             data.eulerAngles = t.localEulerAngles;
+            data.rotation = t.localRotation;
 
             sceneData.nodeCount++;
 
@@ -413,18 +457,17 @@ namespace CocosSync
                         continue;
                     }
                     var childData = ExportNode(c, syncComponent, syncChildren);
-                    data.children.Add(JsonUtility.ToJson(childData));
+                    if (!syncedNodes.ContainsKey(childData.uuid))
+                    {
+                        syncedNodes.Add(childData.uuid, childData);
+                        data.childrenData.Add(childData);
+                    }
                 }
             }
 
             return data;
         }
 
-
-        void SyncScene()
-        {
-
-        }
 
         void OnDestroy()
         {

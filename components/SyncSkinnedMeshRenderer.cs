@@ -8,9 +8,11 @@ using UnityEditor;
 namespace CocosSync
 {
     [Serializable]
-    class SyncSkinnedMeshRendererData : SyncMeshRendererData
+    class SyncSkinnedMeshRendererData : SyncRendererData
     {
         public string skeleton;
+        public string mesh;
+        public string rootBonePath;
 
         public override void Sync(Component c)
         {
@@ -20,6 +22,11 @@ namespace CocosSync
             SkinnedMeshRenderer renderer = c as SkinnedMeshRenderer;
 
             var meshData = SyncAssetData.GetAssetData<SyncMeshData>(renderer.sharedMesh);
+            if (meshData != null)
+            {
+                mesh = meshData.uuid;
+            }
+
             if (meshData != null)
             {
                 var path = Path.ChangeExtension(meshData.path, ".skeleton");
@@ -36,6 +43,9 @@ namespace CocosSync
 
                 skeleton = path;
             }
+
+            CocosSyncTool.Instance.SyncNode(renderer.rootBone);
+            rootBonePath = Hierarchy.GetPath(renderer.rootBone, null);
         }
 
         public override string GetData()
