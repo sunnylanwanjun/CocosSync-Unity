@@ -209,7 +209,10 @@ namespace CocosSync
             {
                 if (!texture.isReadable)
                 {
-                    flipY = !flipY;
+                    if (extName == ".psd")
+                    {
+                        flipY = !flipY;
+                    }
 
                     newTexture2D = new Texture2D(texture.width, texture.height, texture.graphicsFormat, UnityEngine.Experimental.Rendering.TextureCreationFlags.MipChain);
                     Graphics.CopyTexture(texture, newTexture2D);

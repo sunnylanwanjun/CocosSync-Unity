@@ -66,15 +66,36 @@ namespace CocosSync
         }
     }
 
+
+    class ReturnDetailData
+    {
+        public string uuid;
+        public string path;
+
+        public ReturnDetailData(string uuid, string path)
+        {
+            this.uuid = uuid;
+            this.path = path;
+        }
+    }
+
     class CocosSyncTool : EditorWindow
     {
+
+        static CocosSyncTool _Instance = null;
         public static CocosSyncTool Instance
         {
             get
             {
-                return EditorWindow.GetWindow<CocosSyncTool>();
+                if (_Instance == null)
+                {
+                    _Instance = EditorWindow.GetWindow<CocosSyncTool>();
+                }
+                return _Instance;
             }
         }
+
+
 
         public string ForceSyncAsset = "";
         public int MaxChildCount = 100000;
@@ -89,6 +110,8 @@ namespace CocosSync
         private List<IEnumerator<object>> process = new List<IEnumerator<object>>();
 
         private Dictionary<string, SyncNodeData> syncedNodes = new Dictionary<string, SyncNodeData>();
+
+        private ReturnDetailData returnDetailData = null;
 
 
         [MenuItem("Cocos/Sync Tool")]
@@ -147,14 +170,6 @@ namespace CocosSync
                 detail = asset.GetDetailData();
             }
 
-            for (var i = 0; i < 10; i++)
-            {
-                if (Manager.State == SocketManager.States.Closed)
-                {
-                    yield return new WaitForSeconds(0.5f);
-                }
-            }
-
             // var now = DateTime.Now;
             // Debug.Log("get-asset-detail : Finished process data : " + now);
 
@@ -167,7 +182,8 @@ namespace CocosSync
             writer.WriteLine(detail);
             writer.Close();
 
-            Manager.Socket.Emit("get-asset-detail", uuid, tempPath);
+            CocosSyncTool.Instance.returnDetailData = new ReturnDetailData(uuid, tempPath);
+
             // Debug.Log("get-asset-detail : Finished send data: " + DateTime.Now + " : " + DateTime.Now.Subtract(now).Milliseconds.ToString() + "ms");
         }
 
@@ -179,6 +195,12 @@ namespace CocosSync
                 {
                     process.RemoveAt(i);
                 }
+            }
+
+            if (CocosSyncTool.Instance.returnDetailData != null)
+            {
+                Manager.Socket.Emit("get-asset-detail", CocosSyncTool.Instance.returnDetailData.uuid, CocosSyncTool.Instance.returnDetailData.path);
+                CocosSyncTool.Instance.returnDetailData = null;
             }
         }
 
@@ -212,7 +234,7 @@ namespace CocosSync
                 EditorGUILayout.EndHorizontal();
             }
 
-            if (activeObject is Texture)
+            if (activeObject is Texture || activeObject is Material)
             {
                 if (GUILayout.Button("SyncSelectAsset"))
                 {
@@ -259,9 +281,16 @@ namespace CocosSync
         {
             BeginSync();
 
-            if (Selection.activeObject is Texture)
+            foreach (var obj in Selection.objects)
             {
-                SyncAssetData.GetAssetData<SyncTextureData>(Selection.activeObject);
+                if (obj is Texture)
+                {
+                    SyncAssetData.GetAssetData<SyncTextureData>(obj);
+                }
+                else if (obj is Material)
+                {
+                    SyncAssetData.GetAssetData<SyncMaterialData>(obj);
+                }
             }
 
             SyncAssets();

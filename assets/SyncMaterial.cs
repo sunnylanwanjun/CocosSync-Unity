@@ -160,6 +160,11 @@ namespace CocosSync
 
             defines.Add("USE_SMOOTH_CHANNEL=" + (int)smoothChannel);
 
+            if (m.enableInstancing)
+            {
+                defines.Add("USE_INSTANCING=" + m.enableInstancing);
+            }
+
             // pipeline state
             if (m.HasProperty("_Cull"))
             {
