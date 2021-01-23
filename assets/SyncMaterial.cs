@@ -17,7 +17,10 @@ namespace CocosSync
     [Serializable]
     class SyncPassState
     {
-        public int cullMode;
+        public float cullMode;
+        public float blendSrc;
+        public float blendDst;
+        public float zWrite;
     }
 
     public enum BlendMode
@@ -168,7 +171,19 @@ namespace CocosSync
             // pipeline state
             if (m.HasProperty("_Cull"))
             {
-                passState.cullMode = m.GetInt("_Cull");
+                passState.cullMode = m.GetFloat("_Cull");
+            }
+            if (m.HasProperty("_DstBlend"))
+            {
+                passState.blendSrc = m.GetInt("_DstBlend");
+            }
+            if (m.HasProperty("_DstBlend"))
+            {
+                passState.blendDst = m.GetInt("_DstBlend");
+            }
+            if (m.HasProperty("_ZWrite"))
+            {
+                passState.zWrite = m.GetInt("_ZWrite");
             }
 
             // technique

@@ -82,6 +82,8 @@ namespace CocosSync
             {
                 foreach (var probe in probes)
                 {
+                    // CocosSyncTool.Instance.SyncNode(probe.probe.transform);
+
                     var probeData = new SyncMeshRendererProbe();
                     probeData.probePath = Hierarchy.GetPath(probe.probe.transform, null);
                     probeData.weight = probe.weight;
