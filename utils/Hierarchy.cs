@@ -8,12 +8,18 @@ namespace CocosSync
 {
     public class Hierarchy
     {
-        public static string GetPath(Transform t, Transform parent)
+        public static string GetPath(Transform t, Transform parent, bool includeParent = true)
         {
             var path = t.name;
             while (t != parent)
             {
                 t = t.parent;
+
+                if (t == parent && !includeParent)
+                {
+                    break;
+                }
+
                 if (t != null)
                 {
                     path = t.name + "/" + path;
