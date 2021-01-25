@@ -48,8 +48,11 @@ namespace CocosSync
 
             asset.uuid = uuid;
 
+            if (path.StartsWith("Assets/"))
+            {
+                path = path.Remove(0, "Assets/".Length);
+            }
             asset.path = path;
-            asset.path = asset.path.Replace("Assets/", "");
 
             asset.Sync(obj, param1);
 
