@@ -10,6 +10,7 @@ namespace CocosSync
     class SyncAnimatorData : SyncComponentData
     {
         public List<string> clips = new List<string>();
+        public List<string> avatarMap = new List<string>();
 
         public override void Sync(Component c)
         {
@@ -21,10 +22,21 @@ namespace CocosSync
             }
             this.name = "sync.AnimatorComponent";
 
-            var humanDescription = avatar.humanDescription;
-            var humanBone = humanDescription.human;
-            var skeleton = humanDescription.skeleton;
+            // bone
+            for (var i = HumanBodyBones.Hips; i < HumanBodyBones.LastBone; i++)
+            {
+                var t = animator.GetBoneTransform(i);
+                if (t == null)
+                {
+                    avatarMap.Add("");
+                }
+                else
+                {
+                    avatarMap.Add(Hierarchy.GetPath(t, animator.transform, false));
+                }
+            }
 
+            // animation
             var controller = animator.runtimeAnimatorController;
             var clips = controller.animationClips;
             if (controller is AnimatorOverrideController)

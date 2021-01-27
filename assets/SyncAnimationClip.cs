@@ -49,6 +49,8 @@ namespace CocosSync
     class SyncAnimationClipData : SyncAssetData
     {
         public bool isHuman = false;
+        public float duration = 0;
+        public float sample = 0;
 
         AnimationClip clip = null;
 
@@ -72,6 +74,8 @@ namespace CocosSync
             name = "SyncAnimationClip";
             clip = obj as AnimationClip;
             isHuman = param1 != null;
+            duration = clip.length;
+            sample = clip.frameRate;
         }
         public override string GetData()
         {
