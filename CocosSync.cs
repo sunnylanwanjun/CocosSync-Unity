@@ -112,6 +112,7 @@ namespace CocosSync
         private Dictionary<string, SyncNodeData> syncedNodes = new Dictionary<string, SyncNodeData>();
 
         private ReturnDetailData returnDetailData = null;
+        private string toSyncSceneDataPath = "";
 
 
         [MenuItem("Cocos/Sync Tool")]
@@ -197,10 +198,21 @@ namespace CocosSync
                 }
             }
 
-            if (CocosSyncTool.Instance.returnDetailData != null)
+            if (Manager.State == SocketManager.States.Opening || Manager.State == SocketManager.States.Reconnecting)
             {
-                Manager.Socket.Emit("get-asset-detail", CocosSyncTool.Instance.returnDetailData.uuid, CocosSyncTool.Instance.returnDetailData.path);
-                CocosSyncTool.Instance.returnDetailData = null;
+                return;
+            }
+
+            if (returnDetailData != null)
+            {
+                Manager.Socket.Emit("get-asset-detail", returnDetailData.uuid, returnDetailData.path);
+                returnDetailData = null;
+            }
+
+            if (toSyncSceneDataPath != "")
+            {
+                Manager.Socket.Emit("sync-datas", toSyncSceneDataPath);
+                toSyncSceneDataPath = "";
             }
         }
 
@@ -382,10 +394,18 @@ namespace CocosSync
             sceneData.exportBasePath = this.exportBasePath;
             sceneData.forceSyncAsset = this.ForceSyncAsset;
 
-            object jsonData = sceneData.GetData();
-            Manager.Socket.Emit("sync-datas", jsonData);
-
             // sceneData = null;
+
+            var jsonData = sceneData.GetData();
+
+            toSyncSceneDataPath = Path.Combine(sceneData.projectPath, "Temp/CocosSync/sync-scene-data.json");
+            if (!Directory.Exists("Temp/CocosSync"))
+            {
+                Directory.CreateDirectory("Temp/CocosSync");
+            }
+            StreamWriter writer = new StreamWriter(toSyncSceneDataPath);
+            writer.WriteLine(jsonData);
+            writer.Close();
 
             Debug.Log("End Sync: " + DateTime.Now.Subtract(beginTime).Milliseconds.ToString());
         }

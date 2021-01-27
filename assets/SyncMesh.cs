@@ -152,7 +152,7 @@ namespace CocosSync
                 var triangles = mesh.GetTriangles(mi);
                 foreach (var v in triangles)
                 {
-                    smd.indices.Add(v);
+                    smd.indices.Add(v - sm.firstVertex);
                 }
             }
 
