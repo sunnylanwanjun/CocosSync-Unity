@@ -38,17 +38,21 @@ namespace CocosSync
 
             // animation
             var controller = animator.runtimeAnimatorController;
-            var clips = controller.animationClips;
-            if (controller is AnimatorOverrideController)
+            if (controller != null)
             {
-                clips = (controller as AnimatorOverrideController).animationClips;
+                var clips = controller.animationClips;
+                if (controller is AnimatorOverrideController)
+                {
+                    clips = (controller as AnimatorOverrideController).animationClips;
+                }
+
+                foreach (var clip in clips)
+                {
+                    var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clip, avatar.isHuman);
+                    this.clips.Add(clipData.uuid);
+                }
             }
 
-            foreach (var clip in clips)
-            {
-                var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clip, avatar.isHuman);
-                this.clips.Add(clipData.uuid);
-            }
         }
 
         public override string GetData()
