@@ -48,7 +48,7 @@ namespace CocosSync
 
                 foreach (var clip in clips)
                 {
-                    var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clip, avatar.isHuman);
+                    var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clip, avatar.isHuman, animator);
                     this.clips.Add(clipData.uuid);
                 }
             }

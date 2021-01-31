@@ -17,7 +17,7 @@ namespace CocosSync
         public bool shouldCheckSrc = true;
         public bool virtualAsset = false;
 
-        public static IDataType GetAssetData<IDataType>(UnityEngine.Object obj, object param1 = null) where IDataType : SyncAssetData, new()
+        public static IDataType GetAssetData<IDataType>(UnityEngine.Object obj, object param1 = null, object param2 = null) where IDataType : SyncAssetData, new()
         {
             if (obj == null)
             {
@@ -54,7 +54,7 @@ namespace CocosSync
             }
             asset.path = path;
 
-            asset.Sync(obj, param1);
+            asset.Sync(obj, param1, param2);
 
             AddAssetData(asset, false);
 
@@ -79,7 +79,7 @@ namespace CocosSync
             CocosSyncTool.sceneData.assetsMap.Add(asset.uuid, asset);
         }
 
-        public virtual void Sync(UnityEngine.Object obj, object param1 = null)
+        public virtual void Sync(UnityEngine.Object obj, object param1 = null, object param2 = null)
         {
             this.name = "cc.Asset";
         }

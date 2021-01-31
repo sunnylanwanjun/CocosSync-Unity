@@ -37,7 +37,7 @@ namespace CocosSync
         private int submeshStart;
         private int submeshCount;
 
-        public override void Sync(UnityEngine.Object obj, object param1 = null)
+        public override void Sync(UnityEngine.Object obj, object param1 = null, object param2 = null)
         {
             Sync(obj, 0, 10000);
         }

@@ -59,7 +59,7 @@ namespace CocosSync
             }
         }
 
-        public override void Sync(UnityEngine.Object obj, object param1 = null)
+        public override void Sync(UnityEngine.Object obj, object param1 = null, object param2 = null)
         {
             this.name = "cc.Material";
 
