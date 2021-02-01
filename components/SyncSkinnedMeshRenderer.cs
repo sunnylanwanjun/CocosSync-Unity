@@ -29,7 +29,7 @@ namespace CocosSync
 
             if (meshData != null)
             {
-                var path = Path.ChangeExtension(meshData.path, ".skeleton");
+                var path = Path.Combine(Path.GetDirectoryName(meshData.path), Path.GetFileNameWithoutExtension(meshData.path), renderer.transform.name + ".skeleton");
 
                 var asset = new SyncSkeletonData();
                 asset.uuid = path;
@@ -44,8 +44,10 @@ namespace CocosSync
                 skeleton = path;
             }
 
-            CocosSyncTool.Instance.SyncNode(renderer.rootBone);
-            rootBonePath = Hierarchy.GetPath(renderer.rootBone, null);
+            var rootBone = Hierarchy.GetRootBone(renderer);
+
+            // CocosSyncTool.Instance.SyncNode(rootBone);
+            rootBonePath = Hierarchy.GetPath(rootBone, null);
         }
 
         public override string GetData()

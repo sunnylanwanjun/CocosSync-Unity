@@ -27,5 +27,23 @@ namespace CocosSync
             }
             return path;
         }
+
+        public static Transform GetRootBone(SkinnedMeshRenderer renderer)
+        {
+            var rootBone = renderer.rootBone;
+
+            var parent = rootBone.parent;
+            while (parent)
+            {
+                if (parent.GetComponent<Animator>() != null)
+                {
+                    rootBone = parent;
+                    break;
+                }
+                parent = parent.parent;
+            }
+
+            return rootBone;
+        }
     }
 }

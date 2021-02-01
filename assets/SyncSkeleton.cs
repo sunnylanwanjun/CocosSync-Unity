@@ -14,21 +14,16 @@ namespace CocosSync
     {
         public string root = "";
         public List<string> bones = new List<string>();
-        public List<string> matrices = new List<string>();
+        public List<string> bindposes = new List<string>();
 
-        string GetPath(Transform root, Transform child)
+        string GetMatrixString(Matrix4x4 mat)
         {
-            var path = child.name;
-            while (child != root)
-            {
-                path = root.name + "/" + path;
-                child = child.parent;
-            }
-            return path;
-        }
-        string GetMatrix(Transform node)
-        {
-            return Matrix4x4.TRS(node.position, node.rotation, node.localScale).ToString();
+            return
+            mat.m00 + "," + mat.m10 + "," + mat.m20 + "," + mat.m30 + "," +
+            mat.m01 + "," + mat.m11 + "," + mat.m21 + "," + mat.m31 + "," +
+            mat.m02 + "," + mat.m12 + "," + mat.m22 + "," + mat.m32 + "," +
+            mat.m03 + "," + mat.m13 + "," + mat.m23 + "," + mat.m33
+            ;
         }
 
         public override void Sync(UnityEngine.Object obj, object param1 = null)
@@ -36,14 +31,21 @@ namespace CocosSync
             this.name = "cc.Skeleton";
 
             var renderer = param1 as SkinnedMeshRenderer;
-            var rootBone = renderer.rootBone;
+            var rootBone = Hierarchy.GetRootBone(renderer);
 
-            root = rootBone.name;
-            foreach (var bone in renderer.bones)
+            if (rootBone != null)
             {
-                bones.Add(GetPath(rootBone, bone));
-                matrices.Add(GetMatrix(bone));
+                root = rootBone.name;
+                for (var i = 0; i < renderer.bones.Length; i++)
+                {
+                    var bone = renderer.bones[i];
+                    var bindpose = renderer.sharedMesh.bindposes[i];
+
+                    bones.Add(Hierarchy.GetPath(bone, rootBone, false));
+                    bindposes.Add(GetMatrixString(bindpose));
+                }
             }
+
         }
 
 
