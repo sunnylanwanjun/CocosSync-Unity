@@ -19,6 +19,69 @@ namespace CocosSync
         {
             return JsonUtility.ToJson(this);
         }
+
+        public Vector3 GetLastVector3 (int index) {
+            index = values.Count - (index + 1) * 3;
+            Vector3 vec = new Vector3();
+            if (index >= 0) {
+                vec.x = values[index];
+                vec.y = values[index + 1];
+                vec.z = values[index + 2];
+            }
+            return vec;
+        }
+
+        public Quaternion GetLastQuat (int index) {
+            index = values.Count - (index + 1) * 4;
+            Quaternion quat = new Quaternion();
+            if (index >= 0) {
+                quat.x = values[index];
+                quat.y = values[index + 1];
+                quat.z = values[index + 2];
+                quat.w = values[index + 3];
+            }
+            return quat;
+        }
+
+        public Boolean IsLastVector3Same () {
+            var enough = this.IsEnoughVector3(3);
+            if (!enough) return false;
+            var last0 = GetLastVector3(0);
+            var last1 = GetLastVector3(1);
+            var last2 = GetLastVector3(2);
+            if (!last0.Equals(last1)) return false;
+            if (!last0.Equals(last2)) return false;
+            return true;
+        }
+
+        public Boolean IsLastQuatSame () {
+            var enough = this.IsEnoughQuat(3);
+            if (!enough) return false;
+            var last0 = GetLastQuat(0);
+            var last1 = GetLastQuat(1);
+            var last2 = GetLastQuat(2);
+            if (!last0.Equals(last1)) return false;
+            if (!last0.Equals(last2)) return false;
+            return true;
+        }
+
+        public Boolean IsEnoughVector3 (int count) {
+            return values.Count / 3 > count;
+        }
+
+        public Boolean IsEnoughQuat (int count) {
+            return values.Count / 4 > count;
+        }
+
+        public void RemoveLastVector3Value (int index) {
+            index = values.Count - (index + 1) * 3;
+            values.RemoveRange(index, 3);
+        }
+
+        public void RemoveLastQuatValue (int index) {
+            index = values.Count - (index + 1) * 4;
+            values.RemoveRange(index, 4);
+        }
     }
 
     [Serializable]
@@ -39,6 +102,12 @@ namespace CocosSync
         public static string Scale = "scale";
     };
 
+    class AnimationClipParam {
+        public Animator animator;
+        public string stateName;
+        public string folderName;
+    };
+
     [Serializable]
     class SyncAnimationClipData : SyncAssetData
     {
@@ -46,36 +115,27 @@ namespace CocosSync
         public float duration = 0;
         public float sample = 0;
         public string animName = "";
+        public string stateName = "";
+        public string folderName = "";
 
         Animator animator = null;
         AnimationClip clip = null;
 
-        int key = 0;
+        int curvesIndex = 0;
+        int keysIndex = 0;
 
-        static string[][] TRSNames = new string[][] {
-            new string[] { "T.x", "translation" },
-            new string[] { "T.y", "translation" },
-            new string[] { "T.z", "translation" },
-
-            new string[] { "Q.x", "rotation" },
-            new string[] { "Q.y", "rotation" },
-            new string[] { "Q.z", "rotation" },
-            new string[] { "Q.w", "rotation" },
-
-            new string[] { "S.x", "scale" },
-            new string[] { "S.y", "scale" },
-            new string[] { "S.z", "scale" },
-        };
-
-        public override void Sync(UnityEngine.Object obj, object param1 = null, object param2 = null)
+        public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             name = "SyncAnimationClip";
             clip = obj as AnimationClip;
-            animator = param2 as Animator;
-            isHuman = param1 != null;
             duration = clip.length;
             sample = clip.frameRate;
             animName = obj.name;
+
+            var param = param1 as AnimationClipParam;
+            animator = param.animator;
+            stateName = param.stateName;
+            folderName = param.folderName;
         }
 
         public override string GetData()
@@ -83,11 +143,12 @@ namespace CocosSync
             return JsonUtility.ToJson(this);
         }
 
-        void traverseTransform (Transform transform, List<SyncAnimationCurveData> curves, string parentPath, bool ignore) {
+        void traverseTransform (Transform transform, List<SyncAnimationCurveData> curves, List<List<float>> keysVal, float currentTime, string parentPath, bool ignoreCurrentNode, bool isRoot) {
+            if (!transform.gameObject.activeSelf) return;
 
-            if (ignore) {
+            if (ignoreCurrentNode) {
                 for (var i = 0; i < transform.childCount; i++) {
-                    traverseTransform(transform.GetChild(i), curves, parentPath, false);
+                    traverseTransform(transform.GetChild(i), curves, keysVal, currentTime, parentPath, false, false);
                 }
                 return;
             }
@@ -95,34 +156,72 @@ namespace CocosSync
             SyncAnimationCurveData translateCurveData;
             SyncAnimationCurveData scaleCurveData;
             SyncAnimationCurveData rotationCurveData;
+            
+            List<float> translateTimeVal;
+            List<float> scaleTimeVal;
+            List<float> rotationTimeVal;
 
-            if (curves.Count > key) {
-                translateCurveData = curves[key];
-                scaleCurveData = curves[key + 1];
-                rotationCurveData = curves[key + 2];
+            if (keysVal.Count > keysIndex) {
+                translateTimeVal = keysVal[keysIndex];
+                scaleTimeVal = keysVal[keysIndex + 1];
+                rotationTimeVal = keysVal[keysIndex + 2];
+            } else {
+                translateTimeVal = new List<float>();
+                keysVal.Add(translateTimeVal);
+
+                scaleTimeVal = new List<float>();
+                keysVal.Add(scaleTimeVal);
+
+                rotationTimeVal = new List<float>();
+                keysVal.Add(rotationTimeVal);
+            }
+
+            if (curves.Count > curvesIndex) {
+                translateCurveData = curves[curvesIndex];
+                scaleCurveData = curves[curvesIndex + 1];
+                rotationCurveData = curves[curvesIndex + 2];
             } else {
                 translateCurveData = new SyncAnimationCurveData();
                 translateCurveData.name = TransformType.Translation;
-                translateCurveData.key = key / 3;
+                translateCurveData.key = keysIndex;
                 curves.Add(translateCurveData);
 
                 scaleCurveData = new SyncAnimationCurveData();
                 scaleCurveData.name = TransformType.Scale;
-                scaleCurveData.key = key / 3;
+                scaleCurveData.key = keysIndex + 1;
                 curves.Add(scaleCurveData);
 
                 rotationCurveData = new SyncAnimationCurveData();
                 rotationCurveData.name = TransformType.Rotation;
-                rotationCurveData.key = key / 3;
+                rotationCurveData.key = keysIndex + 2;
                 curves.Add(rotationCurveData);
             }
 
-            key += 3;
+            if (!isRoot) {
+                if (parentPath != "") {
+                    parentPath += "/" + transform.name;
+                } else {
+                    parentPath += transform.name;
+                }
+            }
 
-            if (parentPath != "") {
-                parentPath += "/" + transform.name;
-            } else {
-                parentPath += transform.name;
+            var posSame = translateCurveData.IsLastVector3Same();
+            var scaleSame = scaleCurveData.IsLastVector3Same();
+            var rotationSame = rotationCurveData.IsLastQuatSame();
+
+            if (posSame) {
+                translateCurveData.RemoveLastVector3Value(1);
+                translateTimeVal.RemoveAt(translateTimeVal.Count - 2);
+            }
+
+            if (scaleSame) {
+                scaleCurveData.RemoveLastVector3Value(1);
+                scaleTimeVal.RemoveAt(scaleTimeVal.Count - 2);
+            }
+
+            if (rotationSame) {
+                rotationCurveData.RemoveLastQuatValue(1);
+                rotationTimeVal.RemoveAt(rotationTimeVal.Count - 2);
             }
 
             translateCurveData.values.Add(transform.localPosition.x);
@@ -143,117 +242,77 @@ namespace CocosSync
             rotationCurveData.values.Add(quat.w);
             rotationCurveData.path = parentPath;
 
+            translateTimeVal.Add(currentTime);
+            scaleTimeVal.Add(currentTime);
+            rotationTimeVal.Add(currentTime);
+
+            curvesIndex += 3;
+            keysIndex += 3;
+            
             for (var i = 0; i < transform.childCount; i++) {
-                traverseTransform(transform.GetChild(i), curves, parentPath, false);
+                traverseTransform(transform.GetChild(i), curves, keysVal, currentTime, parentPath, false, false);
             }
         }
 
-        void GetHumanData(SyncAnimationClipDataDetail data)
+        void GetDetailData(SyncAnimationClipDataDetail data)
         {
             List<SyncAnimationCurveData> curves = new List<SyncAnimationCurveData>();
-            string keys = "[0";
+            List<List<float>> keysVal = new List<List<float>>();
 
             float dt = 1.0f / 40.0f;
-            animator.Play("Empty", -1, 0);
-            animator.Update(dt);
-
-            animator.Play(animName, -1, 0);
+            animator.Play(stateName, -1, 0);
             var animationState = animator.GetCurrentAnimatorStateInfo(0);
-            
+
             float currentDt = 0.0f;
             float currentTime = 0.0f;
+            bool rootMotion = animator.applyRootMotion;
 
-            Debug.Log("Bake Animation:" + animName + " TotalTime:" + duration);
+            Debug.Log("Bake Animation:" + animName + " TotalTime:" + duration + " StateName:" + stateName);
             while (true) {
                 currentDt = duration - currentTime;
                 if (dt < currentDt) {
                     currentDt = dt;
                 }
                 animator.Update(currentDt);
-                key = 0;
-                traverseTransform(animator.transform, curves, "", true);
+                curvesIndex = 0;
+                keysIndex = 0;
+                traverseTransform(animator.transform, curves, keysVal, currentTime, "", !rootMotion, true);
                 currentTime += dt;
                 if (currentTime >= duration) {
-                    keys += "]";
                     break;
                 }
-                keys += "," +  currentTime;
             }
 
-            data.keys = "[" + keys;
-            for (int i = 0; i < curves.Count; i += 3) {
+            for (int i = 0; i < curves.Count; i ++) {
                 data.curves.Add(curves[i].GetData());
-                data.curves.Add(curves[i + 1].GetData());
-                data.curves.Add(curves[i + 2].GetData());
-                data.keys += "," + keys;
             }
-            data.keys += "]";
 
-            /*
-            var duration = clip.length;
-            var frames = clip.frameRate * duration;
-            var bindings = AnimationUtility.GetCurveBindings(clip);
-
-            Dictionary<string, List<AnimationCurve>> curves = new Dictionary<string, List<AnimationCurve>>();
-            var nodeData = new SyncAnimationNodeData();
-
-            foreach (var binding in bindings)
-            {
-                foreach (var trsPair in TRSNames)
-                {
-                    if (binding.propertyName.EndsWith(trsPair[0]))
-                    {
-                        var boneName = binding.propertyName.Replace(trsPair[0], "");
-                        var propertyName = boneName + "." + trsPair[1];
-
-                        List<AnimationCurve> innnerCurves = null;
-                        curves.TryGetValue(propertyName, out innnerCurves);
-
-                        if (innnerCurves == null)
-                        {
-                            innnerCurves = new List<AnimationCurve>();
-                            curves.Add(propertyName, innnerCurves);
-                        }
-
-                        AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
-                        innnerCurves.Add(curve);
+            // List<List<float>> to json by JsonUtility has some bug, so transfer by manual
+            data.keys = "[";
+            for (int i = 0; i < keysVal.Count; i++) {
+                var itemVal = keysVal[i];
+                var itemKeys = "[";
+                for (int j = 0; j < itemVal.Count; j++) {
+                    if (j == itemVal.Count - 1) {
+                        itemKeys += itemVal[j];
+                    } else {
+                        itemKeys += itemVal[j] + ",";
                     }
                 }
-            }
-
-            foreach (var innnerCurves in curves)
-            {
-                var curveData = new SyncAnimationCurveData();
-                curveData.name = innnerCurves.Key;
-
-                for (var fi = 0; fi < frames; fi++)
-                {
-                    var time = fi * 1 / clip.frameRate;
-                    curveData.times.Add(time);
-
-                    foreach (var curve in innnerCurves.Value)
-                    {
-                        var value = curve.Evaluate(time);
-                        curveData.keyframes.Add(value);
-                    }
+                if (i == keysVal.Count - 1) {
+                    itemKeys += "]";
+                } else {
+                    itemKeys += "],";
                 }
-
-                nodeData.curves.Add(curveData.GetData());
+                data.keys += itemKeys;
             }
-
-            data.nodes.Add(nodeData.GetData());
-            */
+            data.keys += "]";
         }
 
         public override string GetDetailData()
         {
             SyncAnimationClipDataDetail data = new SyncAnimationClipDataDetail();
-
-            if (isHuman)
-            {
-                GetHumanData(data);
-            }
-
+            GetDetailData(data);
             return JsonUtility.ToJson(data);
         }
     }

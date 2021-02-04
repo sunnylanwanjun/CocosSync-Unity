@@ -226,7 +226,7 @@ namespace CocosSync
             return newTexture2D;
         }
 
-        public override void Sync(UnityEngine.Object obj, object param1 = null, object param2 = null)
+        public override void Sync(UnityEngine.Object obj, object param1 = null)
         {
             name = "cc.Texture";
 
