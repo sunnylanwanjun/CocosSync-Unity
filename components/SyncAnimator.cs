@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Animations;
 
 namespace CocosSync
 {
@@ -10,49 +11,40 @@ namespace CocosSync
     class SyncAnimatorData : SyncComponentData
     {
         public List<string> clips = new List<string>();
-        public List<string> avatarMap = new List<string>();
 
         public override void Sync(Component c)
         {
-            var animator = c as Animator;
-            var avatar = animator.avatar;
-            if (avatar == null || !avatar.isHuman)
-            {
-                return;
+            this.name = "cc.SkeletalAnimation";
+
+            var motionsComp = c as Motions;
+            var animator = c.GetComponent<Animator>();
+            if (!animator) {
+                animator = c.gameObject.AddComponent<Animator>();                
             }
-            this.name = "sync.AnimatorComponent";
+            
+            var animatorCtrl = new AnimatorController();
+            animator.runtimeAnimatorController = animatorCtrl;
+            
+            animatorCtrl.AddLayer("Temp");
 
-            // bone
-            for (var i = HumanBodyBones.Hips; i < HumanBodyBones.LastBone; i++)
-            {
-                var t = animator.GetBoneTransform(i);
-                if (t == null)
-                {
-                    avatarMap.Add("");
-                }
-                else
-                {
-                    avatarMap.Add(Hierarchy.GetPath(t, animator.transform, false));
-                }
+            int stateIndex = 0;
+            foreach (var motion in motionsComp.motions) {
+                if (!motion) continue;
+
+                var state = animatorCtrl.AddMotion(motion, 0);
+                var clips = animatorCtrl.animationClips;
+                
+                var param = new AnimationClipParam();
+                param.animator = animator;
+                param.stateName = "state:" + stateIndex + "(" + state.name + ")";
+                param.folderName = motionsComp.folderName;
+
+                state.name = param.stateName;
+                stateIndex++;
+
+                var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clips[clips.Length - 1], param);
+                this.clips.Add(clipData.uuid);
             }
-
-            // animation
-            var controller = animator.runtimeAnimatorController;
-            if (controller != null)
-            {
-                var clips = controller.animationClips;
-                if (controller is AnimatorOverrideController)
-                {
-                    clips = (controller as AnimatorOverrideController).animationClips;
-                }
-
-                foreach (var clip in clips)
-                {
-                    var clipData = SyncAssetData.GetAssetData<SyncAnimationClipData>(clip, avatar.isHuman);
-                    this.clips.Add(clipData.uuid);
-                }
-            }
-
         }
 
         public override string GetData()

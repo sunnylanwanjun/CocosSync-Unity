@@ -114,6 +114,7 @@ namespace CocosSync
         private ReturnDetailData returnDetailData = null;
         private string toSyncSceneDataPath = "";
 
+        public UnityEngine.Object[] selectObjects;
 
         [MenuItem("Cocos/Sync Tool")]
         static void Init()
@@ -254,6 +255,27 @@ namespace CocosSync
                 }
             }
 
+            if (Selection.objects.Length > 0) {
+                if (GUILayout.Button("CopySelectObjects")) {
+                    selectObjects = Selection.objects;
+                }
+            }
+
+            if (selectObjects != null && selectObjects.Length > 0) {
+                if (Selection.activeTransform != null) {
+                    var motionsComponent = Selection.activeTransform.GetComponent<Motions>();
+                    if (motionsComponent != null) {
+                        if (GUILayout.Button("CopySelectObjectsToMotion")) {
+                            for (var i = 0; i < selectObjects.Length; i++) {
+                                var motion = selectObjects[i] as Motion;
+                                if (motion) {
+                                    motionsComponent.motions.Add(motion);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             // if (GUILayout.Button("SyncScene"))
             // {
@@ -470,7 +492,7 @@ namespace CocosSync
                     {
                         compData = new SyncReflectionProbeData();
                     }
-                    else if (comp is Animator)
+                    else if (comp is Motions)
                     {
                         compData = new SyncAnimatorData();
                     }
