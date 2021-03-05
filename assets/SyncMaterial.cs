@@ -38,16 +38,49 @@ namespace CocosSync
         Metallic_A,
     }
 
+    public enum ShaderType
+    {
+        Standard,
+        ShaderGraph,
+    }
+
     [Serializable]
     class SyncMaterialData : SyncAssetData
     {
+        public ShaderType shaderType = ShaderType.Standard;
         public String shaderUuid = "";
         public List<SyncShaderProperty> properties = new List<SyncShaderProperty>();
+        public List<SyncShaderProperty> extendProperties = new List<SyncShaderProperty>();
         public SyncPassState passState = new SyncPassState();
         public string technique = "opaque";
 
         public bool hasLightMap = false;
         public List<string> defines = new List<string>();
+
+        static Dictionary<string, string> PropertiesMap = new Dictionary<string, string> {
+            // builtin standard
+            {"_Color",              "mainColor"},
+            {"_MainTex",            "albedoMap"},
+            {"_Cutoff",             "alphaThreshold"},
+            {"_Metallic",           "metallic"},
+            {"_MetallicGlossMap",   "metallicGlossMap"},
+            {"_BumpScale",          "normalStrenth"},
+            {"_BumpMap",            "normalMap"},
+            {"_OcclusionStrength",  "occlusion"},
+            {"_EmissionColor",      "emissive"},
+            {"_EmissionMap",        "emissiveMap"},
+
+            // urp lit
+            {"_BaseColor",          "mainColor"},
+            {"_BaseMap",            "albedoMap"},
+            {"_Smoothness",         "smoothness"},
+
+            // hdr lit
+            {"_BaseColorMap",       "albedoMap"},
+            {"_NormalMap",          "normalMap"},
+            {"_NormalScale",         "normalStrenth"},
+
+        };
 
         void ModifyValue(Dictionary<string, SyncShaderProperty> propertyMap, string name, string value)
         {
@@ -99,9 +132,17 @@ namespace CocosSync
 
                 var prop = new SyncShaderProperty();
                 prop.type = (int)type;
-                prop.name = name;
 
-                this.properties.Add(prop);
+                if (PropertiesMap.ContainsKey(name))
+                {
+                    PropertiesMap.TryGetValue(name, out prop.name);
+                    this.properties.Add(prop);
+                }
+                else
+                {
+                    prop.name = name;
+                    this.extendProperties.Add(prop);
+                }
 
                 propertyMap.Add(name, prop);
 
