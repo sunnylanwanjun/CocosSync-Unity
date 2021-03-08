@@ -212,7 +212,7 @@ namespace CocosSync
 
             if (toSyncSceneDataPath != "")
             {
-                Manager.Socket.Emit("sync-datas", toSyncSceneDataPath);
+                Manager.Socket.Emit("sync-datas-with-file", toSyncSceneDataPath);
                 toSyncSceneDataPath = "";
             }
         }
